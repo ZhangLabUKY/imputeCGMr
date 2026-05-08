@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Welcome to CGMissingDataR">
-<meta name="description" content="Imputes missing glucose values in repeated-measures continuous glucose monitoring (CGM) data. Workflows create time-series features from raw timestamps, support model selection, and return model-specific completed data sets for glucose values that are already missing in user data. Methods include multiple imputation by chained equations (MICE; Azur et al. (2011) &lt;doi:10.1002/mpr.329&gt;), Random Forest regression (Breiman (2001) &lt;doi:10.1023/A:1010933404324&gt;), k-nearest-neighbor regression (Zhang (2016) &lt;doi:10.21037/atm.2016.03.37&gt;), XGBoost (Chen and Guestrin (2016) &lt;doi:10.1145/2939672.2939785&gt;), LightGBM (Ke et al. (2017) &lt;https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision&gt;), and ARIMA forecasting with the forecast framework (Hyndman and Khandakar (2008) &lt;doi:10.18637/jss.v027.i03&gt;).">
-<meta property="og:description" content="Imputes missing glucose values in repeated-measures continuous glucose monitoring (CGM) data. Workflows create time-series features from raw timestamps, support model selection, and return model-specific completed data sets for glucose values that are already missing in user data. Methods include multiple imputation by chained equations (MICE; Azur et al. (2011) &lt;doi:10.1002/mpr.329&gt;), Random Forest regression (Breiman (2001) &lt;doi:10.1023/A:1010933404324&gt;), k-nearest-neighbor regression (Zhang (2016) &lt;doi:10.21037/atm.2016.03.37&gt;), XGBoost (Chen and Guestrin (2016) &lt;doi:10.1145/2939672.2939785&gt;), LightGBM (Ke et al. (2017) &lt;https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision&gt;), and ARIMA forecasting with the forecast framework (Hyndman and Khandakar (2008) &lt;doi:10.18637/jss.v027.i03&gt;).">
+<meta name="description" content="Imputes missing glucose values in repeated-measures continuous glucose monitoring (CGM) data. Workflows create time-series features from raw timestamps, support model selection, and return model-specific completed data sets for glucose values that are already missing in user data. Methods include multiple imputation by chained equations (MICE; Azur et al. (2011) &lt;doi:10.1002/mpr.329&gt;), Random Forest regression (Breiman (2001) &lt;doi:10.1023/A:1010933404324&gt;), k-nearest-neighbor regression (Zhang (2016) &lt;doi:10.21037/atm.2016.03.37&gt;), XGBoost (Chen and Guestrin (2016) &lt;doi:10.1145/2939672.2939785&gt;), LightGBM (Ke et al. (2017) &lt;https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision&gt;), and ARIMA forecasting with the forecast framework (Hyndman and Khandakar (2008) &lt;doi:10.18637/jss.v027.i03&gt;). An optional Python-compatible backend uses reticulate to call pandas, scikit-learn, statsmodels, and Python xgboost directly.">
+<meta property="og:description" content="Imputes missing glucose values in repeated-measures continuous glucose monitoring (CGM) data. Workflows create time-series features from raw timestamps, support model selection, and return model-specific completed data sets for glucose values that are already missing in user data. Methods include multiple imputation by chained equations (MICE; Azur et al. (2011) &lt;doi:10.1002/mpr.329&gt;), Random Forest regression (Breiman (2001) &lt;doi:10.1023/A:1010933404324&gt;), k-nearest-neighbor regression (Zhang (2016) &lt;doi:10.21037/atm.2016.03.37&gt;), XGBoost (Chen and Guestrin (2016) &lt;doi:10.1145/2939672.2939785&gt;), LightGBM (Ke et al. (2017) &lt;https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision&gt;), and ARIMA forecasting with the forecast framework (Hyndman and Khandakar (2008) &lt;doi:10.18637/jss.v027.i03&gt;). An optional Python-compatible backend uses reticulate to call pandas, scikit-learn, statsmodels, and Python xgboost directly.">
 <meta name="robots" content="noindex">
 </head>
 <body>
@@ -66,34 +66,110 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>CGMissingDataR supports continuous glucose monitoring (CGM) workflows for imputing glucose values that are already missing in user data.</p>
-<p>Current workflow features include:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>The function accepts a data frame with a subject identifier, timestamp column, glucose column, and optional subject-level or visit-level covariates. It returns the original data with completed glucose values in <code>imputed_glucose_value</code> while leaving the original glucose column unchanged.</p>
+<div class="section level2">
+<h2 id="what-the-imputation-workflow-does">What the imputation workflow does<a class="anchor" aria-label="anchor" href="#what-the-imputation-workflow-does"></a>
+</h2>
+<p><code><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> performs the following steps:</p>
+<ol style="list-style-type: decimal">
+<li>reads a data frame or CSV file,</li>
+<li>creates or reuses a <code>TimeSeries</code> column,</li>
+<li>encodes <code>SEX</code> when present,</li>
+<li>creates internal lag and rolling-mean glucose features,</li>
+<li>imputes the target and feature matrix,</li>
+<li>chooses the final model from the observed missing rate:
 <ul>
 <li>
-<code><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> for real missing glucose values,</li>
-<li>model selection with <code>models = "mice_only"</code>, a subset of models, or <code>models = "all"</code>, and</li>
-<li>automatic creation of <code>TimeSeries</code> and <code>TimeDifferenceMinutes</code> from a raw timestamp column, with common timestamp formats standardized internally.</li>
+<code>MICE+ARIMA</code> when missing rate is <code>&lt;= 0.05</code>,</li>
+<li>
+<code>MICE+XGBoost</code> when missing rate is <code>&gt; 0.05</code>,</li>
 </ul>
+</li>
+<li>returns a single completed data frame.</li>
+</ol>
+<p>Generated lag columns and <code>rollmean</code> are used internally and removed before the final data frame is returned.</p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Before installation, make sure the modeling dependencies are available:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="st">"FNN"</span>, <span class="st">"ranger"</span>, <span class="st">"mice"</span>, <span class="st">"xgboost"</span>, <span class="st">"lightgbm"</span>, <span class="st">"forecast"</span>,</span>
-<span>  <span class="st">"CGManalyzer"</span>, <span class="st">"lifecycle"</span></span>
-<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Install the development version of CGMissingDataR from GitHub:</p>
+<p>Install the released version from CRAN:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ZhangLabUKY/CGMissingDataR"</span><span class="op">)</span></span></code></pre></div>
-<p>Install <code>CGMissingDataR</code> from CRAN with:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"CGMissingDataR"</span><span class="op">)</span></span></code></pre></div>
+<p>Or install the development version from GitHub:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ZhangLabUKY/CGMissingDataR"</span><span class="op">)</span></span></code></pre></div>
+<p>The default R-native backend uses the R package <code>mice</code>. For closest agreement with the Python reference workflow, install <code>reticulate</code> and use the optional Python backend.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"reticulate"</span><span class="op">)</span></span></code></pre></div>
+<p>The Python backend uses these Python packages through <code>reticulate</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">reticulate</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/reticulate/reference/py_require.html" class="external-link">py_require</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"numpy"</span>,</span>
+<span>  <span class="st">"pandas"</span>,</span>
+<span>  <span class="st">"scikit-learn"</span>,</span>
+<span>  <span class="st">"statsmodels"</span>,</span>
+<span>  <span class="st">"xgboost"</span></span>
+<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="learn-more">Learn More<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+<h2 id="basic-use">Basic use<a class="anchor" aria-label="anchor" href="#basic-use"></a>
 </h2>
-<p>The vignette is the main tutorial and includes runnable examples, dataset summaries, and real-imputation output:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zhanglabuky.github.io/CGMissingDataR/">CGMissingDataR</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CGMExampleData"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span></span>
+<span>  <span class="va">CGMExampleData</span>,</span>
+<span>  target_col <span class="op">=</span> <span class="st">"LBORRES"</span>,</span>
+<span>  feature_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"AGE"</span>, <span class="st">"hba1c"</span><span class="op">)</span>,</span>
+<span>  id_col <span class="op">=</span> <span class="st">"USUBJID"</span>,</span>
+<span>  time_col <span class="op">=</span> <span class="st">"Time"</span>,</span>
+<span>  imputer_backend <span class="op">=</span> <span class="st">"mice"</span>,</span>
+<span>  prefer_cgmanalyzer_equal_interval <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">out</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"USUBJID"</span>,</span>
+<span>  <span class="st">"Time"</span>,</span>
+<span>  <span class="st">"LBORRES"</span>,</span>
+<span>  <span class="st">"imputed_glucose_value"</span>,</span>
+<span>  <span class="st">"imputation_method"</span>,</span>
+<span>  <span class="st">"missing_rate"</span></span>
+<span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>The original target column is not overwritten. Rows that were missing in <code>LBORRES</code> remain missing there, and the completed value is stored in <code>imputed_glucose_value</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">missing_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">LBORRES</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">out</span><span class="op">[</span><span class="va">missing_rows</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"USUBJID"</span>,</span>
+<span>  <span class="st">"Time"</span>,</span>
+<span>  <span class="st">"LBORRES"</span>,</span>
+<span>  <span class="st">"imputed_glucose_value"</span>,</span>
+<span>  <span class="st">"imputation_method"</span></span>
+<span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="optional-python-compatible-backend">Optional Python-compatible backend<a class="anchor" aria-label="anchor" href="#optional-python-compatible-backend"></a>
+</h2>
+<p>Use <code>imputer_backend = "sklearn"</code> to run the strict Python-compatible path. In that path, <code>reticulate</code> sends the data to Python, where pandas, scikit-learn, statsmodels, and Python xgboost perform the preprocessing and calculations. The completed pandas data frame is then converted back to R.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">out_py</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span></span>
+<span>  <span class="va">CGMExampleData</span>,</span>
+<span>  target_col <span class="op">=</span> <span class="st">"LBORRES"</span>,</span>
+<span>  feature_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"AGE"</span>, <span class="st">"hba1c"</span><span class="op">)</span>,</span>
+<span>  id_col <span class="op">=</span> <span class="st">"USUBJID"</span>,</span>
+<span>  time_col <span class="op">=</span> <span class="st">"Time"</span>,</span>
+<span>  imputer_backend <span class="op">=</span> <span class="st">"sklearn"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The Python backend is optional. It is not required for package installation, loading, or CRAN examples.</p>
+</div>
+<div class="section level2">
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+</h2>
+<p>The vignette contains a detailed walkthrough of data requirements, return columns, backend selection, optional Python setup, and troubleshooting:</p>
 <p><a href="https://zhanglabuky.github.io/CGMissingDataR/articles/How-To-Use-CGMissingDataR.html" class="uri">https://zhanglabuky.github.io/CGMissingDataR/articles/How-To-Use-CGMissingDataR.html</a></p>
 </div>
 <div class="section level2">

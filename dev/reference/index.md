@@ -3,7 +3,8 @@
 ## Current Imputation Workflows
 
 - [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md)
-  : Impute real missing glucose values
+  : Impute real missing glucose values using the CGMissingData Python
+  workflow
 
 ## Deprecated Legacy Workflow
 

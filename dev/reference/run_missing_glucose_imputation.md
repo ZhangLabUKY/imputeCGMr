@@ -1,9 +1,17 @@
-# Impute real missing glucose values
+# Impute real missing glucose values using the CGMissingData Python workflow
 
-Imputes existing missing values in a target glucose column using
-generated time features, lag features, and the selected model workflow.
-This function does not calculate accuracy metrics because the true
-values for the originally missing glucose rows are unknown.
+Strict R entry point for the real-missing-value imputation workflow in
+the Python package `CGMissingData` 0.1.6. When
+`imputer_backend = "sklearn"`, the full strict path is executed in
+Python through `reticulate`: pandas performs preprocessing and feature
+construction, scikit-learn runs `IterativeImputer`, statsmodels runs
+segmentwise ARIMA when the missing rate is low, and Python xgboost runs
+the high-missingness branch. The completed pandas data frame is then
+converted back to R.
+
+The R fallback `imputer_backend = "mice"` keeps the same R-side pipeline
+and uses the R package `mice` for the imputation matrix. No
+iterative-ridge backend is used.
 
 ## Usage
 
@@ -16,16 +24,22 @@ run_missing_glucose_imputation(
   time_col = "Time",
   time_format = "yyyy:mm:dd:hh:nn",
   time_unit = "minute",
-  models = "mice_only",
+  models = "auto",
   rf_n_estimators = 200,
   knn_k = 7,
   xgb_nrounds = 300,
   lgb_nrounds = 400,
   arima_order = c(4L, 1L, 0L),
   seed = 42,
-  lag_k = c(1, 2, 3),
+  lag_k = c(1L, 2L, 3L),
   add_rollmean = TRUE,
-  roll_window = 3
+  roll_window = 3L,
+  interval_minutes = 5L,
+  use_arima_if_missing_leq = 0.05,
+  arima_min_history = 20L,
+  imputer_backend = c("mice", "sklearn"),
+  prefer_cgmanalyzer_equal_interval = FALSE,
+  export = FALSE
 )
 ```
 
@@ -38,104 +52,134 @@ run_missing_glucose_imputation(
 
 - target_col:
 
-  Single character string: target column with missing values to impute.
+  Single character string: target glucose column with missing values to
+  impute. Python default name is `"glucose_value"`.
 
 - feature_cols:
 
-  Character vector of base feature columns excluding `target_col`. If
-  `NULL`, all columns except `target_col`, `time_col`, and generated
-  time features are used.
+  Optional character vector of base feature columns. If `NULL`, the
+  Python pipeline feature set is used when available: `TimeSeries`,
+  `TimeDifferenceMinutes`, `id_col`, `AGE`, `SEX`, `HBA1C`, `lag1`,
+  `lag2`, `lag3`, and `rollmean`. If supplied, the listed columns are
+  used together with the generated time, subject, lag, and rolling-mean
+  columns that exist in the data.
 
 - id_col:
 
-  Character string: subject identifier column used for time gaps and lag
-  features.
+  Character string: subject identifier column. Python default name is
+  `"subjectid"`.
 
 - time_col:
 
-  Character string: raw timestamp column to convert into `TimeSeries`.
+  Character string: raw timestamp column. Python default name is
+  `"timestamp"`.
 
 - time_format:
 
-  Advanced character string passed to
-  [`CGManalyzer::timeSeqConversion.fn()`](https://rdrr.io/pkg/CGManalyzer/man/timeSeqConversion.fn.html).
-  The default automatically handles common timestamp inputs, so most
-  users only need to provide `time_col`.
+  Retained for compatibility with the old R function. The Python-engine
+  path uses pandas timestamp parsing.
 
 - time_unit:
 
-  Character string passed to
-  [`CGManalyzer::timeSeqConversion.fn()`](https://rdrr.io/pkg/CGManalyzer/man/timeSeqConversion.fn.html).
-  Use `"minute"` or `"second"`.
+  Retained for compatibility with the old R function and not used by the
+  strict Python-engine path.
 
 - models:
 
-  Character vector of models to return. Use `"mice_only"`, `"rf"`,
-  `"knn"`, `"xgboost"`, `"lightgbm"`, `"arima"`, or `"all"`. MICE is
-  always run internally because the other models depend on the
-  MICE-completed target.
+  Retained for compatibility. The strict Python workflow auto-selects
+  between `MICE+ARIMA` and `MICE+XGBoost` from the missing-rate
+  threshold; RF, kNN, LightGBM, and MICE-only are not used.
 
-- rf_n_estimators:
+- rf_n_estimators, knn_k, lgb_nrounds:
 
-  Integer: number of random forest trees. Only used when `models`
-  includes `"rf"` or `"all"`.
-
-- knn_k:
-
-  Integer: number of kNN neighbors. Only used when `models` includes
-  `"knn"` or `"all"`.
+  Retained for compatibility and ignored by the strict Python workflow.
 
 - xgb_nrounds:
 
-  Integer: number of XGBoost boosting rounds. Only used when `models`
-  includes `"xgboost"` or `"all"`.
-
-- lgb_nrounds:
-
-  Integer: number of LightGBM boosting rounds. Only used when `models`
-  includes `"lightgbm"` or `"all"`.
+  Integer: number of XGBoost boosting rounds. Python's `n_estimators`
+  default is 300.
 
 - arima_order:
 
-  Integer vector of length 3 for
-  [`forecast::Arima()`](https://pkg.robjhyndman.com/forecast/reference/Arima.html).
-  Only used when `models` includes `"arima"` or `"all"`.
+  Integer vector of length 3. Python default is `c(4L, 1L, 0L)`.
 
 - seed:
 
-  Integer seed for MICE and model reproducibility.
+  Integer seed for scikit-learn and XGBoost. Python default is 42.
 
 - lag_k:
 
-  Integer vector of target lags to compute.
+  Integer vector of target lags to compute. Python default is
+  `c(1L, 2L, 3L)`.
 
 - add_rollmean:
 
-  Logical: add rolling mean of prior target values.
+  Logical: add rolling mean of prior target values. Python always adds
+  this; setting `FALSE` is allowed only for compatibility.
 
 - roll_window:
 
-  Integer rolling mean window.
+  Integer rolling mean window. Python default is 3.
+
+- interval_minutes:
+
+  Equal interval in minutes. In the Python-engine path, elapsed minutes
+  are computed by subject when `TimeSeries` is not already present.
+
+- use_arima_if_missing_leq:
+
+  Numeric missing-rate threshold. If the target missing rate is less
+  than or equal to this value, segmentwise ARIMA is used; otherwise
+  XGBoost is used. Python default is 0.05.
+
+- arima_min_history:
+
+  Minimum number of prior observations required before fitting ARIMA for
+  a missing segment. Python default is 20.
+
+- imputer_backend:
+
+  One of `"mice"` or `"sklearn"`. `"mice"` uses the R package `mice` as
+  the CRAN-safe R-native fallback. `"sklearn"` uses Python modules
+  through `reticulate` for the full strict workflow and gives the
+  closest agreement with the Python package.
+
+- prefer_cgmanalyzer_equal_interval:
+
+  Retained for compatibility. The Python-engine path uses pandas
+  elapsed-minute construction unless an existing non-empty `TimeSeries`
+  column is supplied.
+
+- export:
+
+  Logical; if `TRUE`, writes the returned imputed data frame to a
+  timestamped CSV file in the current working directory. Default is
+  `FALSE`.
 
 ## Value
 
-A list containing `summary`, a data.frame with columns `Method`,
-`MissingRate`, `MissingCount`, and `RowsUsed`; and `imputed_data`, a
-named list of model-specific completed data.frames.
+A data.frame sorted by `id_col` and `TimeSeries`, matching the Python
+package output shape. The original target column is left unchanged, so
+rows that were originally missing remain `NA` in `target_col`.
+`imputed_glucose_value` contains the completed target values,
+`imputation_method` is either `"MICE+ARIMA"` or `"MICE+XGBoost"`, and
+`missing_rate` is the original target missing rate. Generated lag and
+rolling-mean feature columns are used internally and removed before
+return.
 
 ## Details
 
-Common timestamp inputs, including `POSIXct`, `Date`,
-`2020:01:16:00:00`, `2020-01-16 00:00:00`, `2020/01/16 00:00:00`, and
-`2020-01-16T00:00:00`, are standardized internally before
-[`CGManalyzer::timeSeqConversion.fn()`](https://rdrr.io/pkg/CGManalyzer/man/timeSeqConversion.fn.html)
-is called.
+For closest Python-package parity, use `imputer_backend = "sklearn"`
+with a Python environment containing `numpy`, `pandas`, `scikit-learn`,
+`statsmodels`, and `xgboost`. The sklearn path intentionally calls those
+modules directly rather than wrapping the Python package.
 
-The returned `imputed_data` object is a named list with one data.frame
-per selected model. The original target column is kept unchanged.
-`ObservedValue` contains the original target values, including `NA`
-where glucose was missing, and `ImputedValue` contains the completed
-model-specific target values.
+The ARIMA branch is segmentwise, matching the Python package: within
+each subject, contiguous missing blocks are detected, ARIMA is fit only
+to the MICE-completed history before the block, and forecasts replace
+the MICE values only when there are at least `arima_min_history` finite
+historical values and the ARIMA fit succeeds. Otherwise, the MICE value
+is retained.
 
 ## Examples
 
@@ -147,35 +191,15 @@ out <- run_missing_glucose_imputation(
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
   time_col = "Time",
-  models = c("mice_only", "rf"),
-  rf_n_estimators = 25
+  imputer_backend = "mice"
 )
-out$summary
-#>                                      Method MissingRate MissingCount RowsUsed
-#> 1 MICE-only (base features; impute LBORRES)         0.1           50      500
-#> 2       MICE + RF (engineered lag features)         0.1           50      500
-names(out$imputed_data)
-#> [1] "mice_only" "rf"       
-head(subset(out$imputed_data$rf, .Missing == TRUE))
-#>                                 Method .Missing USUBJID LBORRES
-#> 10 MICE + RF (engineered lag features)     TRUE      11      NA
-#> 31 MICE + RF (engineered lag features)     TRUE      11      NA
-#> 32 MICE + RF (engineered lag features)     TRUE      11      NA
-#> 33 MICE + RF (engineered lag features)     TRUE      11      NA
-#> 34 MICE + RF (engineered lag features)     TRUE      11      NA
-#> 55 MICE + RF (engineered lag features)     TRUE      11      NA
-#>                Time AGE hba1c TimeSeries TimeDifferenceMinutes LBORRES_lag1
-#> 10 2020:01:16:00:45  34   6.4      31120                     5    135.00000
-#> 31 2020:01:16:02:30  34   6.4      31225                     5     83.00000
-#> 32 2020:01:16:02:35  34   6.4      31230                     5     74.48172
-#> 33 2020:01:16:02:40  34   6.4      31235                     5    140.24141
-#> 34 2020:01:16:02:45  34   6.4      31240                     5    220.58479
-#> 55 2020:01:16:04:30  34   6.4      31345                     5     80.00000
-#>    LBORRES_lag2 LBORRES_lag3 LBORRES_rollmean_3 ObservedValue ImputedValue
-#> 10    134.00000    131.00000          133.33333            NA       135.08
-#> 31     83.00000     91.00000           85.66667            NA        82.52
-#> 32     83.00000     83.00000           80.16057            NA        75.36
-#> 33     74.48172     83.00000           99.24104            NA       155.76
-#> 34    140.24141     74.48172          145.10264            NA       123.36
-#> 55     84.00000     81.00000           81.66667            NA        78.68
+#> Warning: Number of logged events: 35
+head(out[, c("LBORRES", "imputed_glucose_value", "imputation_method")])
+#>   LBORRES imputed_glucose_value imputation_method
+#> 1     150                   150      MICE+XGBoost
+#> 2     134                   134      MICE+XGBoost
+#> 3     125                   125      MICE+XGBoost
+#> 4     132                   132      MICE+XGBoost
+#> 5     132                   132      MICE+XGBoost
+#> 6     132                   132      MICE+XGBoost
 ```

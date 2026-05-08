@@ -43,16 +43,36 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="cgmissingdatar-development-version">CGMissingDataR (development version)<a class="anchor" aria-label="anchor" href="#cgmissingdatar-development-version"></a></h2>
-<ul><li>Made <code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> the primary public workflow for imputing glucose values that are already missing in user data.</li>
-<li>Made the simulation-based comprehensive masking benchmark internal for development and validation.</li>
-<li>Added automatic raw timestamp standardization for common character, <code>POSIXct</code>, and <code>Date</code> inputs before using <code><a href="https://rdrr.io/pkg/CGManalyzer/man/timeSeqConversion.fn.html" class="external-link">CGManalyzer::timeSeqConversion.fn()</a></code> to create <code>TimeSeries</code>, plus within-subject <code>TimeDifferenceMinutes</code>.</li>
-<li>Added model selection with the <code>models</code> argument. The default is <code>models = "mice_only"</code>; use <code>models = "all"</code> to run MICE-only, Random Forest, kNN, XGBoost, LightGBM, and ARIMA.</li>
-<li>Updated real-imputation outputs to return nested model-specific <code>imputed_data</code> data frames.</li>
-<li>Updated <code>CGMExampleData</code> to be the public 500-row multi-subject CGM example dataset with deterministic missing glucose values for real-imputation examples.</li>
-<li>Deprecated <code><a href="../reference/run_missingness_benchmark.html">run_missingness_benchmark()</a></code>. It remains available for backward compatibility and now warns users to prefer <code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> for real missing glucose values.</li>
-<li>Preparing for version 0.0.2 of CGMissingDataR after transferring GitHub Repository and fixing URLs.</li>
+<h2 class="pkg-version" data-toc-text="0.0.2" id="cgmissingdatar-002">CGMissingDataR 0.0.2<a class="anchor" aria-label="anchor" href="#cgmissingdatar-002"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-0-0-2">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-0-0-2"></a></h3>
+<ul><li><p>Refocused the package documentation around real missing glucose imputation with <code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code>.</p></li>
+<li><p>Updated <code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> to return a single completed data frame rather than nested model-specific output objects.</p></li>
+<li><p>Added the completed glucose column <code>imputed_glucose_value</code> while preserving the original glucose column unchanged. Rows that were originally missing in the target column remain <code>NA</code> in that original column.</p></li>
+<li><p>Added method labels through <code>imputation_method</code>, currently either <code>"MICE+ARIMA"</code> or <code>"MICE+XGBoost"</code>.</p></li>
+<li><p>Added <code>missing_rate</code>, the observed missingness rate in the target glucose column before imputation.</p></li>
+<li><p>Added automatic workflow selection based on the observed target missing rate: <code>MICE+ARIMA</code> is used when the missing rate is less than or equal to 5%, and <code>MICE+XGBoost</code> is used when the missing rate is greater than 5%.</p></li>
+<li><p>Added internal lag and rolling-mean feature construction for imputation and modeling. These engineered columns are used internally and removed from the returned data frame.</p></li>
+<li><p>Added support for common timestamp inputs, including colon-separated timestamps, ISO-style timestamps, slash-separated timestamps, and <code>POSIXct</code> values.</p></li>
+<li><p>Added an optional Python-compatible backend through <code>imputer_backend = "sklearn"</code>. This path uses <code>reticulate</code> to call Python modules directly, including <code>pandas</code>, <code>scikit-learn</code>, <code>statsmodels</code>, and Python <code>xgboost</code>.</p></li>
+<li><p>Kept <code>imputer_backend = "mice"</code> as the CRAN-safe default backend.</p></li>
+<li><p>Added optional Python-engine tests that are skipped by default and only run when explicitly enabled with the <code>CGMISSINGDATAR_TEST_PYTHON</code> environment variable.</p></li>
+<li><p>Updated README and vignette documentation to describe the imputation workflow, output columns, timestamp handling, backend options, and optional reticulate setup.</p></li>
 </ul></div>
+<div class="section level3">
+<h3 id="documentation-0-0-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-0-2"></a></h3>
+<ul><li><p>Updated examples to focus on real missing glucose imputation with <code>CGMExampleData</code>.</p></li>
+<li><p>Documented the difference between the default R-native MICE backend and the optional Python-compatible sklearn backend.</p></li>
+<li><p>Documented the expected output structure: <code>TimeSeries</code>, <code>imputed_glucose_value</code>, <code>imputation_method</code>, and <code>missing_rate</code>.</p></li>
+<li><p>Documented CRAN-safe usage of the optional Python backend.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="package-maintenance-0-0-2">Package maintenance<a class="anchor" aria-label="anchor" href="#package-maintenance-0-0-2"></a></h3>
+<ul><li><p>Updated package version from <code>0.0.1.9000</code> to <code>0.0.2</code>.</p></li>
+<li><p>Moved <code>reticulate</code> to optional usage for the Python-compatible backend.</p></li>
+<li><p>Added and updated tests for the imputation return shape, timestamp parsing, internal feature cleanup, and optional Python backend behavior.</p></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.1" id="cgmissingdatar-001">CGMissingDataR 0.0.1<a class="anchor" aria-label="anchor" href="#cgmissingdatar-001"></a></h2><p class="text-muted">CRAN release: 2026-02-03</p>
 <ul><li>Initial package creation preparing for CRAN submission.</li>

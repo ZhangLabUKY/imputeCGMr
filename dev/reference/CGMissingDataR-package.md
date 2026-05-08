@@ -16,7 +16,9 @@ Random Forest regression (Breiman (2001)
 <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision>),
 and ARIMA forecasting with the forecast framework (Hyndman and Khandakar
 (2008)
-[doi:10.18637/jss.v027.i03](https://doi.org/10.18637/jss.v027.i03) ).
+[doi:10.18637/jss.v027.i03](https://doi.org/10.18637/jss.v027.i03) ). An
+optional Python-compatible backend uses 'reticulate' to call 'pandas',
+'scikit-learn', 'statsmodels', and Python 'xgboost' directly.
 
 ## See also
 
