@@ -10,44 +10,47 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
 )
 ```
 
-# CGMissingDataR
+# Overview
 
-CGMissingDataR imputes missing glucose values in continuous glucose monitoring
-(CGM) data. The main public workflow is `run_missing_glucose_imputation()`,
-which accepts a raw timestamp column, creates `TimeSeries` and
-`TimeDifferenceMinutes` internally, and returns completed values from the
-selected imputation models.
-
-The timestamp column can be stored in common formats such as
-`2020:01:16:00:00`, `2020-01-16 00:00:00`, `2020/01/16 00:00:00`, or as a
-`POSIXct` column. The function standardizes those timestamps before calling
-`CGManalyzer::timeSeqConversion.fn()`.
-
-Use `models = "mice_only"` for a quick MICE-only run. Use `models = "all"` to
-run MICE-only, Random Forest, kNN, XGBoost, LightGBM, and ARIMA, or pass a
-subset such as `models = c("mice_only", "rf")`.
-
-Simulation-based benchmarking is kept as an internal development and validation
-workflow.
-
-## Installation
-
-Before installation, make sure the modeling dependencies are available:
+CGMissingDataR imputes glucose values that are already missing in continuous
+ glucose monitoring (CGM) data. The main user-facing function is:
 
 ```r
-install.packages(c(
-  "FNN", "ranger", "mice", "xgboost", "lightgbm", "forecast",
-  "CGManalyzer", "lifecycle"
-))
+run_missing_glucose_imputation()
 ```
 
-Install the development version of CGMissingDataR from GitHub:
+The function is designed for real missing glucose values. It returns a single
+ data frame with the original glucose column left unchanged and a new completed
+ glucose column named `imputed_glucose_value`.
 
-``` r
+The core workflow is:
+
+1. read a data frame or CSV file;
+2. create or reuse a `TimeSeries` column;
+3. encode `SEX` when present;
+4. create internal lag and rolling-mean glucose features;
+5. impute the target and feature matrix;
+6. choose `MICE+ARIMA` or `MICE+XGBoost` from the observed missing rate;
+7. remove internal-only engineered features before returning the data frame.
+
+# Installation
+
+Install the CRAN release with:
+
+```r
+install.packages("CGMissingDataR")
+```
+
+Install the development version with:
+
+```r
+install.packages("devtools")
 devtools::install_github("ZhangLabUKY/CGMissingDataR")
 ```
 
@@ -57,75 +60,309 @@ Load the package:
 library(CGMissingDataR)
 ```
 
-## Example Data
+# Example data
 
-`CGMExampleData` is a small multi-subject CGM dataset with raw timestamps and
-deterministic missing glucose values. It does not include `TimeSeries` or
-`TimeDifferenceMinutes`; those generated time features are created inside the
-imputation function.
+`CGMExampleData` is a small multi-subject CGM data set included with the
+ package. It contains a subject identifier, raw timestamp column, glucose column,
+ age, and HbA1c.
 
 ```{r example-data}
 data("CGMExampleData")
 
-data.frame(
-  Dataset = "CGMExampleData",
+summary_table <- data.frame(
   Rows = nrow(CGMExampleData),
+  Columns = ncol(CGMExampleData),
   Subjects = length(unique(CGMExampleData$USUBJID)),
   MissingGlucose = sum(is.na(CGMExampleData$LBORRES)),
   MissingPercent = round(mean(is.na(CGMExampleData$LBORRES)) * 100, 1)
 )
 
+summary_table
 head(CGMExampleData)
 ```
 
-## Impute Missing Glucose Values
+The example data intentionally does not include `TimeSeries`. The imputation
+ function creates that column internally from the raw `Time` column.
 
-Use `run_missing_glucose_imputation()` when your data already contains missing
-glucose values. This function returns imputed values but does not calculate
-accuracy metrics, because the true values for those missing rows are unknown.
+# Required input columns
 
-This example uses all available methods. Smaller model iteration counts are
-used so the example stays reasonably quick.
+At minimum, the imputation function needs:
 
-```{r real-imputation-example}
-impute_out <- run_missing_glucose_imputation(
+| Role | Argument | Example column |
+|---|---|---|
+| Glucose value to impute | `target_col` | `LBORRES` |
+| Subject identifier | `id_col` | `USUBJID` |
+| Raw timestamp | `time_col` | `Time` |
+| Additional predictors | `feature_cols` | `AGE`, `hba1c` |
+
+The target column may contain missing values. Predictor columns should be numeric
+ or coercible to numeric. The `SEX` column, when present, is internally encoded
+ as `M = 1` and `F = 0`.
+
+# Basic real-imputation workflow
+
+For the CRAN-safe R-native path, use `imputer_backend = "mice"`.
+
+```{r basic-imputation}
+impute_out <- suppressWarnings(
+  run_missing_glucose_imputation(
+    CGMExampleData,
+    target_col = "LBORRES",
+    feature_cols = c("AGE", "hba1c"),
+    id_col = "USUBJID",
+    time_col = "Time",
+    imputer_backend = "mice",
+    prefer_cgmanalyzer_equal_interval = FALSE,
+    xgb_nrounds = 5
+  )
+)
+```
+
+The result is a data frame:
+
+```{r output-shape}
+class(impute_out)
+nrow(impute_out)
+names(impute_out)
+```
+
+The most important returned columns are:
+
+| Column | Meaning |
+|---|---|
+| Original target column, e.g. `LBORRES` | The original glucose column. Values originally missing remain `NA`. |
+| `TimeSeries` | Numeric elapsed time feature derived from the timestamp column. |
+| `imputed_glucose_value` | Completed glucose values after imputation. |
+| `imputation_method` | Final method used: `MICE+ARIMA` or `MICE+XGBoost`. |
+| `missing_rate` | Original missing rate of the target column. |
+
+```{r output-preview}
+head(impute_out[c(
+  "USUBJID",
+  "Time",
+  "TimeSeries",
+  "LBORRES",
+  "imputed_glucose_value",
+  "imputation_method",
+  "missing_rate"
+)])
+```
+
+The original target column is not overwritten:
+
+```{r original-target-unchanged}
+sum(is.na(CGMExampleData$LBORRES))
+sum(is.na(impute_out$LBORRES))
+sum(is.na(impute_out$imputed_glucose_value))
+```
+
+Inspect only the rows where glucose was originally missing:
+
+```{r missing-row-preview}
+missing_rows <- is.na(impute_out$LBORRES)
+head(impute_out[missing_rows, c(
+  "USUBJID",
+  "Time",
+  "LBORRES",
+  "imputed_glucose_value",
+  "imputation_method"
+)])
+```
+
+# How the method is selected
+
+The function automatically chooses the final imputation model from the target
+ missing rate:
+
+- if missing rate is less than or equal to `use_arima_if_missing_leq`, the final
+  method is `MICE+ARIMA`;
+- otherwise, the final method is `MICE+XGBoost`.
+
+The default threshold is `0.05`.
+
+```{r method-selection}
+unique(impute_out$missing_rate)
+unique(impute_out$imputation_method)
+```
+
+For data sets with more than 5% target missingness, the default final method is
+ usually `MICE+XGBoost`. For lower missingness, the function uses segmentwise
+ ARIMA when enough subject-level history is available.
+
+# Time handling
+
+The function accepts common timestamp formats, including colon-separated,
+ hyphen-separated, slash-separated, ISO-style, and `POSIXct` inputs.
+
+Examples of accepted character formats include:
+
+```r
+"2020:01:16:00:00"
+"2020-01-16 00:00:00"
+"2020/01/16 00:00:00"
+"01/16/2020 00:00"
+"2020-01-16T00:00:00"
+```
+
+If a non-empty `TimeSeries` column is already present, the function reuses it.
+ Otherwise, it creates `TimeSeries` from the timestamp column.
+
+For quieter reproducible examples, this vignette uses:
+
+```r
+prefer_cgmanalyzer_equal_interval = FALSE
+```
+
+That bypasses `CGManalyzer::equalInterval.fn()` and uses elapsed minutes by
+ subject. Users who want the CGManalyzer equal-interval behavior can leave the
+ default value as `TRUE`.
+
+# Internal engineered features
+
+The workflow creates lag and rolling-mean features before imputation. These
+ features are used internally by the imputer and final model, but they are not
+ included in the returned data frame.
+
+```{r internal-feature-check}
+grep("^lag[0-9]+$|^rollmean$", names(impute_out), value = TRUE)
+```
+
+This should return an empty character vector because those features are internal
+ implementation details.
+
+# Optional Python-compatible backend
+
+For closest agreement with the Python reference workflow, use:
+
+```r
+imputer_backend = "sklearn"
+```
+
+In that mode, the function sends the input data frame to Python through
+ `reticulate`. Python then performs preprocessing and imputation with:
+
+- `pandas` for data-frame operations;
+- `scikit-learn` for `IterativeImputer`;
+- `statsmodels` for ARIMA;
+- Python `xgboost` for XGBoost regression.
+
+The completed pandas data frame is then converted back to R.
+
+## Installing optional Python dependencies
+
+Install `reticulate` in R:
+
+```r
+install.packages("reticulate")
+```
+
+Declare the Python dependencies before running the Python backend:
+
+```r
+reticulate::py_require(c(
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "statsmodels",
+  "xgboost"
+))
+```
+
+Then call the function with `imputer_backend = "sklearn"`:
+
+```{r python-backend-example, eval = FALSE}
+out_py <- run_missing_glucose_imputation(
   CGMExampleData,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
   time_col = "Time",
-  models = "all",
-  rf_n_estimators = 25,
-  xgb_nrounds = 25,
-  lgb_nrounds = 25
+  imputer_backend = "sklearn",
+  xgb_nrounds = 5
+)
+
+head(out_py[c(
+  "USUBJID",
+  "Time",
+  "LBORRES",
+  "imputed_glucose_value",
+  "imputation_method"
+)])
+```
+
+The Python backend is optional. It is not required for package installation or
+ for building this vignette.
+
+# Choosing a backend
+
+| Backend | Use case | Notes |
+|---|---|---|
+| `mice` | Default R-native workflow | CRAN-safe and does not require Python. |
+| `sklearn` | Closest Python-compatible workflow | Requires `reticulate` and Python packages. |
+
+Use `mice` for simple installation and CRAN-safe examples. Use `sklearn` when
+ comparing with the Python reference workflow or when you want Python libraries
+ to perform the full strict path.
+
+# Exporting results
+
+Set `export = TRUE` to write the returned imputed data frame to a timestamped
+ CSV file in the current working directory.
+
+```{r export-example, eval = FALSE}
+out <- run_missing_glucose_imputation(
+  CGMExampleData,
+  target_col = "LBORRES",
+  feature_cols = c("AGE", "hba1c"),
+  id_col = "USUBJID",
+  time_col = "Time",
+  imputer_backend = "mice",
+  export = TRUE
 )
 ```
 
-The `summary` table reports the missingness seen after preprocessing.
+The function still returns the data frame invisibly to the assignment target.
 
-```{r real-imputation-summary}
-impute_out$summary
+# Troubleshooting
+
+## Timestamp parsing errors
+
+If you see an error such as:
+
+```r
+Some timestamp values could not be parsed
 ```
 
-The returned `imputed_data` object is a named list with one completed data frame
-per selected method.
+check the values in your timestamp column:
 
-```{r real-imputation-names}
-names(impute_out$imputed_data)
+```r
+head(unique(your_data$Time))
 ```
 
-In the returned data, the original target column is left unchanged. That means
-`LBORRES` is still `NA` where glucose was originally missing, while
-`ImputedValue` contains the completed glucose value.
+Use a standard format such as `YYYY-mm-dd HH:MM:SS`, `YYYY:mm:dd:HH:MM`, or a
+ `POSIXct` column.
 
-```{r real-imputation-rf-preview}
-rf_missing_rows <- impute_out$imputed_data$rf[
-  impute_out$imputed_data$rf$.Missing,
-  c(
-    "USUBJID", "Time", ".Missing", "LBORRES", "ObservedValue",
-    "ImputedValue", "TimeSeries", "TimeDifferenceMinutes"
-  )
-]
+## Python module errors
 
-head(rf_missing_rows)
+If the Python backend reports a missing module such as `sklearn`, remember that
+ the package is installed as `scikit-learn` but imported as `sklearn`.
+
+```r
+reticulate::py_require(c("scikit-learn", "pandas", "statsmodels", "xgboost"))
+```
+
+If Python was already initialized before declaring requirements, restart R and
+ run the call again.
+
+## Warnings from `mice`
+
+Small or highly collinear data sets can cause `mice` to report logged events.
+ This is common with tiny examples and does not necessarily indicate failure.
+ With real data, inspect those warnings to decide whether columns should be
+ removed, recoded, or simplified.
+
+# Session information
+
+```{r session-info}
+utils::sessionInfo()
 ```

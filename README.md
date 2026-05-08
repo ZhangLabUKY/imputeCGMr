@@ -13,47 +13,141 @@ checks](https://badges.cranchecks.info/summary/CGMissingDataR.svg)](https://cran
 [![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/CGMissingDataR)](https://cran.r-project.org/package=CGMissingDataR)
 [![Last Commit
 Release](https://img.shields.io/github/last-commit/ZhangLabUKY/CGMissingDataR/master)](https://github.com/ZhangLabUKY/CGMissingDataR/commits/master/)
-<!-- badges: end -->
+<!-- badges: end --> CGMissingDataR imputes glucose values that are
+already missing in continuous glucose monitoring (CGM) data. The main
+public workflow is:
 
-CGMissingDataR supports continuous glucose monitoring (CGM) workflows for
-imputing glucose values that are already missing in user data.
+``` r
+run_missing_glucose_imputation()
+```
 
-Current workflow features include:
+The function accepts a data frame with a subject identifier, timestamp
+column, glucose column, and optional subject-level or visit-level
+covariates. It returns the original data with completed glucose values
+in `imputed_glucose_value` while leaving the original glucose column
+unchanged.
 
-- `run_missing_glucose_imputation()` for real missing glucose values,
-- model selection with `models = "mice_only"`, a subset of models, or
-  `models = "all"`, and
-- automatic creation of `TimeSeries` and `TimeDifferenceMinutes` from a
-  raw timestamp column, with common timestamp formats standardized
-  internally.
+## What the imputation workflow does
+
+`run_missing_glucose_imputation()` performs the following steps:
+
+1.  reads a data frame or CSV file,
+2.  creates or reuses a `TimeSeries` column,
+3.  encodes `SEX` when present,
+4.  creates internal lag and rolling-mean glucose features,
+5.  imputes the target and feature matrix,
+6.  chooses the final model from the observed missing rate:
+    - `MICE+ARIMA` when missing rate is `<= 0.05`,
+    - `MICE+XGBoost` when missing rate is `> 0.05`,
+7.  returns a single completed data frame.
+
+Generated lag columns and `rollmean` are used internally and removed
+before the final data frame is returned.
 
 ## Installation
 
-Before installation, make sure the modeling dependencies are available:
-
-``` r
-install.packages(c(
-  "FNN", "ranger", "mice", "xgboost", "lightgbm", "forecast",
-  "CGManalyzer", "lifecycle"
-))
-```
-
-Install the development version of CGMissingDataR from GitHub:
-
-``` r
-devtools::install_github("ZhangLabUKY/CGMissingDataR")
-```
-
-Install `CGMissingDataR` from CRAN with:
+Install the released version from CRAN:
 
 ``` r
 install.packages("CGMissingDataR")
 ```
 
-## Learn More
+Or install the development version from GitHub:
 
-The vignette is the main tutorial and includes runnable examples,
-dataset summaries, and real-imputation output:
+``` r
+install.packages("devtools")
+devtools::install_github("ZhangLabUKY/CGMissingDataR")
+```
+
+The default R-native backend uses the R package `mice`. For closest
+agreement with the Python reference workflow, install `reticulate` and
+use the optional Python backend.
+
+``` r
+install.packages("reticulate")
+```
+
+The Python backend uses these Python packages through `reticulate`:
+
+``` r
+reticulate::py_require(c(
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "statsmodels",
+  "xgboost"
+))
+```
+
+## Basic use
+
+``` r
+library(CGMissingDataR)
+
+data("CGMExampleData")
+
+out <- run_missing_glucose_imputation(
+  CGMExampleData,
+  target_col = "LBORRES",
+  feature_cols = c("AGE", "hba1c"),
+  id_col = "USUBJID",
+  time_col = "Time",
+  imputer_backend = "mice",
+  prefer_cgmanalyzer_equal_interval = FALSE
+)
+
+head(out[c(
+  "USUBJID",
+  "Time",
+  "LBORRES",
+  "imputed_glucose_value",
+  "imputation_method",
+  "missing_rate"
+)])
+```
+
+The original target column is not overwritten. Rows that were missing in
+`LBORRES` remain missing there, and the completed value is stored in
+`imputed_glucose_value`.
+
+``` r
+missing_rows <- is.na(out$LBORRES)
+head(out[missing_rows, c(
+  "USUBJID",
+  "Time",
+  "LBORRES",
+  "imputed_glucose_value",
+  "imputation_method"
+)])
+```
+
+## Optional Python-compatible backend
+
+Use `imputer_backend = "sklearn"` to run the strict Python-compatible
+path. In that path, `reticulate` sends the data to Python, where pandas,
+scikit-learn, statsmodels, and Python xgboost perform the preprocessing
+and calculations. The completed pandas data frame is then converted back
+to R.
+
+``` r
+out_py <- run_missing_glucose_imputation(
+  CGMExampleData,
+  target_col = "LBORRES",
+  feature_cols = c("AGE", "hba1c"),
+  id_col = "USUBJID",
+  time_col = "Time",
+  imputer_backend = "sklearn"
+)
+```
+
+The Python backend is optional. It is not required for package
+installation, loading, or CRAN examples.
+
+## Learn more
+
+The vignette contains a detailed walkthrough of data requirements,
+return columns, backend selection, optional Python setup, and
+troubleshooting:
 
 <https://zhanglabuky.github.io/CGMissingDataR/articles/How-To-Use-CGMissingDataR.html>
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/imputation.R
 \name{run_missing_glucose_imputation}
 \alias{run_missing_glucose_imputation}
-\title{Impute real missing glucose values}
+\title{Impute real missing glucose values using the CGMissingData Python workflow}
 \usage{
 run_missing_glucose_imputation(
   data,
@@ -12,92 +12,129 @@ run_missing_glucose_imputation(
   time_col = "Time",
   time_format = "yyyy:mm:dd:hh:nn",
   time_unit = "minute",
-  models = "mice_only",
+  models = "auto",
   rf_n_estimators = 200,
   knn_k = 7,
   xgb_nrounds = 300,
   lgb_nrounds = 400,
   arima_order = c(4L, 1L, 0L),
   seed = 42,
-  lag_k = c(1, 2, 3),
+  lag_k = c(1L, 2L, 3L),
   add_rollmean = TRUE,
-  roll_window = 3
+  roll_window = 3L,
+  interval_minutes = 5L,
+  use_arima_if_missing_leq = 0.05,
+  arima_min_history = 20L,
+  imputer_backend = c("mice", "sklearn"),
+  prefer_cgmanalyzer_equal_interval = FALSE,
+  export = FALSE
 )
 }
 \arguments{
 \item{data}{A data.frame, an object coercible to data.frame, or a path to a
 CSV file.}
 
-\item{target_col}{Single character string: target column with missing values
-to impute.}
+\item{target_col}{Single character string: target glucose column with
+missing values to impute. Python default name is \code{"glucose_value"}.}
 
-\item{feature_cols}{Character vector of base feature columns excluding
-\code{target_col}. If \code{NULL}, all columns except \code{target_col}, \code{time_col}, and
-generated time features are used.}
+\item{feature_cols}{Optional character vector of base feature columns. If
+\code{NULL}, the Python pipeline feature set is used when available:
+\code{TimeSeries}, \code{TimeDifferenceMinutes}, \code{id_col}, \code{AGE}, \code{SEX}, \code{HBA1C},
+\code{lag1}, \code{lag2}, \code{lag3}, and \code{rollmean}. If supplied, the listed columns are
+used together with the generated time, subject, lag, and rolling-mean
+columns that exist in the data.}
 
-\item{id_col}{Character string: subject identifier column used for time gaps
-and lag features.}
+\item{id_col}{Character string: subject identifier column. Python default
+name is \code{"subjectid"}.}
 
-\item{time_col}{Character string: raw timestamp column to convert into
-\code{TimeSeries}.}
+\item{time_col}{Character string: raw timestamp column. Python default name
+is \code{"timestamp"}.}
 
-\item{time_format}{Advanced character string passed to
-\code{CGManalyzer::timeSeqConversion.fn()}. The default automatically handles
-common timestamp inputs, so most users only need to provide \code{time_col}.}
+\item{time_format}{Retained for compatibility with the old R function. The
+Python-engine path uses pandas timestamp parsing.}
 
-\item{time_unit}{Character string passed to
-\code{CGManalyzer::timeSeqConversion.fn()}. Use \code{"minute"} or \code{"second"}.}
+\item{time_unit}{Retained for compatibility with the old R function and not
+used by the strict Python-engine path.}
 
-\item{models}{Character vector of models to return. Use \code{"mice_only"},
-\code{"rf"}, \code{"knn"}, \code{"xgboost"}, \code{"lightgbm"}, \code{"arima"}, or \code{"all"}.
-MICE is always run internally because the other models depend on the
-MICE-completed target.}
+\item{models}{Retained for compatibility. The strict Python workflow
+auto-selects between \code{MICE+ARIMA} and \code{MICE+XGBoost} from the missing-rate
+threshold; RF, kNN, LightGBM, and MICE-only are not used.}
 
-\item{rf_n_estimators}{Integer: number of random forest trees.
-Only used when \code{models} includes \code{"rf"} or \code{"all"}.}
+\item{rf_n_estimators, knn_k, lgb_nrounds}{Retained for compatibility and
+ignored by the strict Python workflow.}
 
-\item{knn_k}{Integer: number of kNN neighbors. Only used when \code{models}
-includes \code{"knn"} or \code{"all"}.}
+\item{xgb_nrounds}{Integer: number of XGBoost boosting rounds. Python's
+\code{n_estimators} default is 300.}
 
-\item{xgb_nrounds}{Integer: number of XGBoost boosting rounds. Only used
-when \code{models} includes \code{"xgboost"} or \code{"all"}.}
+\item{arima_order}{Integer vector of length 3. Python default is
+\code{c(4L, 1L, 0L)}.}
 
-\item{lgb_nrounds}{Integer: number of LightGBM boosting rounds. Only used
-when \code{models} includes \code{"lightgbm"} or \code{"all"}.}
+\item{seed}{Integer seed for scikit-learn and XGBoost. Python default is 42.}
 
-\item{arima_order}{Integer vector of length 3 for \code{forecast::Arima()}. Only
-used when \code{models} includes \code{"arima"} or \code{"all"}.}
+\item{lag_k}{Integer vector of target lags to compute. Python default is
+\code{c(1L, 2L, 3L)}.}
 
-\item{seed}{Integer seed for MICE and model reproducibility.}
+\item{add_rollmean}{Logical: add rolling mean of prior target values. Python
+always adds this; setting \code{FALSE} is allowed only for compatibility.}
 
-\item{lag_k}{Integer vector of target lags to compute.}
+\item{roll_window}{Integer rolling mean window. Python default is 3.}
 
-\item{add_rollmean}{Logical: add rolling mean of prior target values.}
+\item{interval_minutes}{Equal interval in minutes. In the Python-engine path,
+elapsed minutes are computed by subject when \code{TimeSeries} is not already
+present.}
 
-\item{roll_window}{Integer rolling mean window.}
+\item{use_arima_if_missing_leq}{Numeric missing-rate threshold. If the target
+missing rate is less than or equal to this value, segmentwise ARIMA is used;
+otherwise XGBoost is used. Python default is 0.05.}
+
+\item{arima_min_history}{Minimum number of prior observations required before
+fitting ARIMA for a missing segment. Python default is 20.}
+
+\item{imputer_backend}{One of \code{"mice"} or \code{"sklearn"}. \code{"mice"} uses the
+R package \code{mice} as the CRAN-safe R-native fallback. \code{"sklearn"} uses
+Python modules through \code{reticulate} for the full strict workflow and gives
+the closest agreement with the Python package.}
+
+\item{prefer_cgmanalyzer_equal_interval}{Retained for compatibility. The
+Python-engine path uses pandas elapsed-minute construction unless an
+existing non-empty \code{TimeSeries} column is supplied.}
+
+\item{export}{Logical; if \code{TRUE}, writes the returned imputed data frame to a
+timestamped CSV file in the current working directory. Default is \code{FALSE}.}
 }
 \value{
-A list containing \code{summary}, a data.frame with columns \code{Method},
-\code{MissingRate}, \code{MissingCount}, and \code{RowsUsed}; and \code{imputed_data}, a named
-list of model-specific completed data.frames.
+A data.frame sorted by \code{id_col} and \code{TimeSeries}, matching the Python
+package output shape. The original target column is left unchanged, so rows
+that were originally missing remain \code{NA} in \code{target_col}.
+\code{imputed_glucose_value} contains the completed target values,
+\code{imputation_method} is either \code{"MICE+ARIMA"} or \code{"MICE+XGBoost"}, and
+\code{missing_rate} is the original target missing rate. Generated lag and
+rolling-mean feature columns are used internally and removed before return.
 }
 \description{
-Imputes existing missing values in a target glucose column using generated
-time features, lag features, and the selected model workflow. This function
-does not calculate accuracy metrics because the true values for the
-originally missing glucose rows are unknown.
+Strict R entry point for the real-missing-value imputation workflow in the
+Python package \code{CGMissingData} 0.1.6. When \code{imputer_backend = "sklearn"}, the
+full strict path is executed in Python through \code{reticulate}: pandas performs
+preprocessing and feature construction, scikit-learn runs
+\code{IterativeImputer}, statsmodels runs segmentwise ARIMA when the missing rate
+is low, and Python xgboost runs the high-missingness branch. The completed
+pandas data frame is then converted back to R.
+
+The R fallback \code{imputer_backend = "mice"} keeps the same R-side pipeline and
+uses the R package \code{mice} for the imputation matrix. No iterative-ridge
+backend is used.
 }
 \details{
-Common timestamp inputs, including \code{POSIXct}, \code{Date},
-\code{2020:01:16:00:00}, \verb{2020-01-16 00:00:00}, \verb{2020/01/16 00:00:00}, and
-\verb{2020-01-16T00:00:00}, are standardized internally before
-\code{CGManalyzer::timeSeqConversion.fn()} is called.
+For closest Python-package parity, use \code{imputer_backend = "sklearn"} with a
+Python environment containing \code{numpy}, \code{pandas}, \code{scikit-learn},
+\code{statsmodels}, and \code{xgboost}. The sklearn path intentionally calls those
+modules directly rather than wrapping the Python package.
 
-The returned \code{imputed_data} object is a named list with one data.frame per
-selected model. The original target column is kept unchanged. \code{ObservedValue}
-contains the original target values, including \code{NA} where glucose was
-missing, and \code{ImputedValue} contains the completed model-specific target
-values.
+The ARIMA branch is segmentwise, matching the Python package: within each
+subject, contiguous missing blocks are detected, ARIMA is fit only to the
+MICE-completed history before the block, and forecasts replace the MICE
+values only when there are at least \code{arima_min_history} finite historical
+values and the ARIMA fit succeeds. Otherwise, the MICE value is retained.
 }
 \examples{
 data("CGMExampleData")
@@ -107,11 +144,8 @@ out <- run_missing_glucose_imputation(
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
   time_col = "Time",
-  models = c("mice_only", "rf"),
-  rf_n_estimators = 25
+  imputer_backend = "mice"
 )
-out$summary
-names(out$imputed_data)
-head(subset(out$imputed_data$rf, .Missing == TRUE))
+head(out[, c("LBORRES", "imputed_glucose_value", "imputation_method")])
 
 }
