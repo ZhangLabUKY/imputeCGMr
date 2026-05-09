@@ -23,16 +23,20 @@ navbar:
 articles:
 - title: How To Use CGMissingDataR
   contents: How-To-Use-CGMissingDataR
+- title: Using the Shiny App
+  contents: Using-the-CGMissingDataR-Shiny-App
 reference:
 - title: Current Imputation Workflows
   contents:
   - run_missing_glucose_imputation
+  - run_app
 - title: Deprecated Legacy Workflow
   contents:
   - run_missingness_benchmark
 - title: Datasets
   contents:
-  - CGMExampleData
+  - CGMExmplDat5Pct
+  - CGMExmplDat10Pct
 footer:
   left: © 2026 Shubh Saraswat
   right: Built with pkgdown

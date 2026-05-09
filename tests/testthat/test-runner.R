@@ -1,12 +1,12 @@
 test_that("public example dataset has expected missing glucose shape", {
-  data("CGMExampleData", package = "CGMissingDataR")
+  data("CGMExmplDat10Pct", package = "CGMissingDataR")
 
-  expect_equal(nrow(CGMExampleData), 500L)
-  expect_equal(ncol(CGMExampleData), 5L)
-  expect_equal(length(unique(CGMExampleData$USUBJID)), 5L)
-  expect_equal(sum(is.na(CGMExampleData$LBORRES)), 50L)
-  expect_false("TimeSeries" %in% names(CGMExampleData))
-  expect_false("TimeDifferenceMinutes" %in% names(CGMExampleData))
+  expect_equal(nrow(CGMExmplDat10Pct), 500L)
+  expect_equal(ncol(CGMExmplDat10Pct), 5L)
+  expect_equal(length(unique(CGMExmplDat10Pct$USUBJID)), 5L)
+  expect_equal(sum(is.na(CGMExmplDat10Pct$LBORRES)), 50L)
+  expect_false("TimeSeries" %in% names(CGMExmplDat10Pct))
+  expect_false("TimeDifferenceMinutes" %in% names(CGMExmplDat10Pct))
 })
 
 expect_strict_imputation_output <- function(out, target_col = "LBORRES") {
@@ -72,11 +72,11 @@ test_that("real missing glucose imputation returns strict-port data frame", {
   skip_if_not_installed("mice")
   skip_if_not_installed("data.table")
 
-  data("CGMExampleData", package = "CGMissingDataR")
+  data("CGMExmplDat10Pct", package = "CGMissingDataR")
 
   out <- .suppress_expected_imputation_warnings(
     run_missing_glucose_imputation(
-      CGMExampleData,
+      CGMExmplDat10Pct,
       target_col = "LBORRES",
       feature_cols = c("AGE", "hba1c"),
       id_col = "USUBJID",
@@ -88,7 +88,7 @@ test_that("real missing glucose imputation returns strict-port data frame", {
   )
 
   expect_strict_imputation_output(out)
-  expect_equal(nrow(out), nrow(CGMExampleData))
+  expect_equal(nrow(out), nrow(CGMExmplDat10Pct))
   expect_equal(sum(is.na(out$LBORRES)), 50L)
   expect_false(anyNA(out$imputed_glucose_value))
   expect_equal(unique(out$missing_rate), 50 / 500)
@@ -98,12 +98,12 @@ test_that("legacy model argument is ignored with a compatibility warning", {
   skip_if_not_installed("mice")
   skip_if_not_installed("data.table")
 
-  data("CGMExampleData", package = "CGMissingDataR")
+  data("CGMExmplDat10Pct", package = "CGMissingDataR")
 
   expect_warning(
     out <- .suppress_expected_imputation_warnings(
       run_missing_glucose_imputation(
-        CGMExampleData,
+        CGMExmplDat10Pct,
         target_col = "LBORRES",
         feature_cols = c("AGE", "hba1c"),
         id_col = "USUBJID",
@@ -182,10 +182,10 @@ test_that("sklearn Python engine works when explicitly enabled", {
     "xgboost"
   ))
 
-  data("CGMExampleData", package = "CGMissingDataR")
+  data("CGMExmplDat10Pct", package = "CGMissingDataR")
 
   out <- run_missing_glucose_imputation(
-    CGMExampleData,
+    CGMExmplDat10Pct,
     target_col = "LBORRES",
     feature_cols = c("AGE", "hba1c"),
     id_col = "USUBJID",
@@ -195,6 +195,6 @@ test_that("sklearn Python engine works when explicitly enabled", {
   )
 
   expect_strict_imputation_output(out)
-  expect_equal(nrow(out), nrow(CGMExampleData))
+  expect_equal(nrow(out), nrow(CGMExmplDat10Pct))
   expect_false(anyNA(out$imputed_glucose_value))
 })

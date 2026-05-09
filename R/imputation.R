@@ -640,9 +640,9 @@ run_comprehensive_imputation_benchmark <- function(
 #' values and the ARIMA fit succeeds. Otherwise, the MICE value is retained.
 #'
 #' @examples
-#' data("CGMExampleData")
+#' data("CGMExmplDat10Pct")
 #' out <- run_missing_glucose_imputation(
-#'   CGMExampleData,
+#'   CGMExmplDat10Pct,
 #'   target_col = "LBORRES",
 #'   feature_cols = c("AGE", "hba1c"),
 #'   id_col = "USUBJID",
@@ -678,6 +678,20 @@ run_missing_glucose_imputation <- function(
   prefer_cgmanalyzer_equal_interval = FALSE,
   export = FALSE
 ) {
+  # Send a message if the target column has more than 20% missing values
+  # in the full data set.
+  target_missing_rate <- mean(is.na(data[[target_col]]))
+  if (target_missing_rate > 0.20) {
+    message(
+      "Warning: target_col '",
+      target_col,
+      "' has",
+      target_missing_rate * 100,
+      "% missing values. 
+      Imputed values may be less reliable when the missing rate is high."
+    )
+  }
+
   imputer_backend <- match.arg(imputer_backend)
 
   if (!is.character(target_col) || length(target_col) != 1L) {

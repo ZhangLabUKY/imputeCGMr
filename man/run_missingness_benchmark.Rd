@@ -2,8 +2,7 @@
 % Please edit documentation in R/run_bench.R
 \name{run_missingness_benchmark}
 \alias{run_missingness_benchmark}
-\title{Run missingness benchmark (target-masking with LAG features)
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}}
+\title{Run missingness benchmark (target-masking with LAG features)}
 \usage{
 run_missingness_benchmark(
   data,
@@ -53,6 +52,8 @@ If NULL, uses all columns except \code{target_col}.}
 A data.frame with columns: MaskRate, Method, MRD, MaskedCount.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
 This function is deprecated. Use
 \code{run_missing_glucose_imputation()} for real missing glucose values.
 

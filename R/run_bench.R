@@ -1,7 +1,8 @@
 #' Run missingness benchmark (target-masking with LAG features)
-#' `r lifecycle::badge("deprecated")`
 #'
 #' @description
+#' `r lifecycle::badge("deprecated")`
+#'
 #' This function is deprecated. Use
 #' `run_missing_glucose_imputation()` for real missing glucose values.
 #'

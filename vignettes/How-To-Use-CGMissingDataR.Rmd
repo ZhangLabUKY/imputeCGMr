@@ -62,23 +62,23 @@ library(CGMissingDataR)
 
 # Example data
 
-`CGMExampleData` is a small multi-subject CGM data set included with the
+`CGMExmplDat10Pct` is a small multi-subject CGM data set included with the
  package. It contains a subject identifier, raw timestamp column, glucose column,
  age, and HbA1c.
 
 ```{r example-data}
-data("CGMExampleData")
+data("CGMExmplDat10Pct")
 
 summary_table <- data.frame(
-  Rows = nrow(CGMExampleData),
-  Columns = ncol(CGMExampleData),
-  Subjects = length(unique(CGMExampleData$USUBJID)),
-  MissingGlucose = sum(is.na(CGMExampleData$LBORRES)),
-  MissingPercent = round(mean(is.na(CGMExampleData$LBORRES)) * 100, 1)
+  Rows = nrow(CGMExmplDat10Pct),
+  Columns = ncol(CGMExmplDat10Pct),
+  Subjects = length(unique(CGMExmplDat10Pct$USUBJID)),
+  MissingGlucose = sum(is.na(CGMExmplDat10Pct$LBORRES)),
+  MissingPercent = round(mean(is.na(CGMExmplDat10Pct$LBORRES)) * 100, 1)
 )
 
 summary_table
-head(CGMExampleData)
+head(CGMExmplDat10Pct)
 ```
 
 The example data intentionally does not include `TimeSeries`. The imputation
@@ -106,7 +106,7 @@ For the CRAN-safe R-native path, use `imputer_backend = "mice"`.
 ```{r basic-imputation}
 impute_out <- suppressWarnings(
   run_missing_glucose_imputation(
-    CGMExampleData,
+    CGMExmplDat10Pct,
     target_col = "LBORRES",
     feature_cols = c("AGE", "hba1c"),
     id_col = "USUBJID",
@@ -151,7 +151,7 @@ head(impute_out[c(
 The original target column is not overwritten:
 
 ```{r original-target-unchanged}
-sum(is.na(CGMExampleData$LBORRES))
+sum(is.na(CGMExmplDat10Pct$LBORRES))
 sum(is.na(impute_out$LBORRES))
 sum(is.na(impute_out$imputed_glucose_value))
 ```
@@ -272,7 +272,7 @@ Then call the function with `imputer_backend = "sklearn"`:
 
 ```{r python-backend-example, eval = FALSE}
 out_py <- run_missing_glucose_imputation(
-  CGMExampleData,
+  CGMExmplDat10Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
@@ -311,7 +311,7 @@ Set `export = TRUE` to write the returned imputed data frame to a timestamped
 
 ```{r export-example, eval = FALSE}
 out <- run_missing_glucose_imputation(
-  CGMExampleData,
+  CGMExmplDat10Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",

@@ -137,9 +137,9 @@ values only when there are at least \code{arima_min_history} finite historical
 values and the ARIMA fit succeeds. Otherwise, the MICE value is retained.
 }
 \examples{
-data("CGMExampleData")
+data("CGMExmplDat10Pct")
 out <- run_missing_glucose_imputation(
-  CGMExampleData,
+  CGMExmplDat10Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",

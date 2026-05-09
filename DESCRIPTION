@@ -22,7 +22,8 @@ Imports:
     lightgbm,
     forecast,
     CGManalyzer,
-    lifecycle
+    lifecycle,
+    shiny
 Suggests:
     testthat (>= 3.0.0),
     spelling, 
