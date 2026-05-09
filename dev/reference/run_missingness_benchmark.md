@@ -1,4 +1,6 @@
-# Run missingness benchmark (target-masking with LAG features) **\[deprecated\]**
+# Run missingness benchmark (target-masking with LAG features)
+
+**\[deprecated\]**
 
 This function is deprecated. Use
 [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md)

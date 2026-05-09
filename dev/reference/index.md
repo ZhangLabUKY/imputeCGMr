@@ -11,10 +11,8 @@
 ## Deprecated Legacy Workflow
 
 - [`run_missingness_benchmark()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missingness_benchmark.md)
-  :
-
-  Run missingness benchmark (target-masking with LAG features)
-  **\[deprecated\]**
+  **\[deprecated\]** : Run missingness benchmark (target-masking with
+  LAG features)
 
 ## Datasets
 
