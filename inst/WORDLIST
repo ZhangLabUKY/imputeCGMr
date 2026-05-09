@@ -30,12 +30,14 @@ benchmarking
 changelog
 coercible
 collinear
+datetimes
 doi
 et
 imputer
 jss
 kNN
 mpr
+parseable
 recoded
 reticulate
 rollmean

@@ -1,6 +1,6 @@
 Package: CGMissingDataR
 Title: Impute Missing Glucose Values in CGM Data
-Version: 0.0.1.9000
+Version: 0.0.2
 Authors@R: c(
     person("Shubh", "Saraswat", email = "shubh.saraswat00@gmail.com", role = c("cre", "aut", "cph"),
     comment = c(ORCID = "0009-0009-2359-1484")),
@@ -23,12 +23,12 @@ Imports:
     forecast,
     CGManalyzer,
     lifecycle,
+    reticulate,
     shiny
 Suggests:
     testthat (>= 3.0.0),
     spelling, 
     knitr,
-    reticulate,
     rmarkdown
 Config/testthat/edition: 3
 NeedsCompilation: no

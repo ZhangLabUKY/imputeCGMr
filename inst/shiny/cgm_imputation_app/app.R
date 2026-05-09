@@ -122,6 +122,28 @@ ui <- fluidPage(
     )
   )
 )
+.load_example_data <- function(object_name) {
+  ns <- tryCatch(asNamespace("CGMissingDataR"), error = function(e) NULL)
+
+  if (!is.null(ns) && exists(object_name, envir = ns, inherits = FALSE)) {
+    return(get(object_name, envir = ns, inherits = FALSE))
+  }
+
+  env <- new.env(parent = emptyenv())
+  ok <- tryCatch(
+    {
+      data(list = object_name, package = "CGMissingDataR", envir = env)
+      exists(object_name, envir = env, inherits = FALSE)
+    },
+    error = function(e) FALSE
+  )
+
+  if (isTRUE(ok)) {
+    return(get(object_name, envir = env, inherits = FALSE))
+  }
+
+  stop("Could not load example dataset: ", object_name, call. = FALSE)
+}
 
 server <- function(input, output, session) {
   active_data <- reactiveVal(NULL)
@@ -163,12 +185,10 @@ server <- function(input, output, session) {
     dat <- switch(
       input$example_data,
       "CGMExmplDat5Pct" = {
-        data("CGMExmplDat5Pct", package = "CGMissingDataR")
-        CGMExmplDat5Pct
+        .load_example_data("CGMExmplDat5Pct")
       },
       "CGMExmplDat10Pct" = {
-        data("CGMExmplDat10Pct", package = "CGMissingDataR")
-        CGMExmplDat10Pct
+        .load_example_data("CGMExmplDat10Pct")
       },
       NULL
     )
@@ -336,7 +356,7 @@ server <- function(input, output, session) {
             feature_cols <- NULL
           }
 
-          out <- CGMissingDataR::run_missing_glucose_imputation(
+          out <- run_missing_glucose_imputation(
             data = dat,
             target_col = input$target_col,
             feature_cols = feature_cols,
