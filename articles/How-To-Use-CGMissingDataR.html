@@ -76,26 +76,42 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>CGMissingDataR imputes glucose values that are already missing in
-continuous glucose monitoring (CGM) data. The main user-facing function
-is:</p>
+<p>CGMissingDataR imputes missing glucose values in continuous glucose
+monitoring (CGM) data. The main user-facing function is:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>The function is designed for real missing glucose values. It returns
-a single data frame with the original glucose column left unchanged and
-a new completed glucose column named
-<code>imputed_glucose_value</code>.</p>
+<p>The function is designed for real missing glucose values. It handles
+two common forms of CGM missingness:</p>
+<ol style="list-style-type: decimal">
+<li>explicit missing glucose values, where a row exists but the glucose
+value is <code>NA</code>; and</li>
+<li>implicit missing readings, where expected timestamps are absent from
+the data.</li>
+</ol>
+<p>Before imputation, the function regularizes each subject to an equal
+<code>interval_minutes</code> timestamp grid. Missing timestamp gaps are
+converted into explicit rows with <code>target_col = NA</code>, then
+imputed by the same workflow used for explicit missing glucose
+values.</p>
+<p>The returned data frame is intentionally minimal. It contains the
+original user-supplied columns plus a completed glucose column named
+<code>imputed_glucose_value</code>. Internal columns used for timestamp
+regularization, time features, lag features, rolling means, model
+fitting, and missingness tracking are not returned.</p>
 <p>The core workflow is:</p>
 <ol style="list-style-type: decimal">
 <li>read a data frame or CSV file;</li>
-<li>create or reuse a <code>TimeSeries</code> column;</li>
-<li>encode <code>SEX</code> when present;</li>
-<li>create internal lag and rolling-mean glucose features;</li>
+<li>parse and sort timestamps by subject;</li>
+<li>regularize each subject to an equal <code>interval_minutes</code>
+timestamp grid;</li>
+<li>insert missing timestamp rows with
+<code>target_col = NA</code>;</li>
+<li>create internal time, lag, and rolling-mean features;</li>
 <li>impute the target and feature matrix;</li>
 <li>choose <code>MICE+ARIMA</code> or <code>MICE+XGBoost</code> from the
-observed missing rate;</li>
-<li>remove internal-only engineered features before returning the data
-frame.</li>
+post-regularization missing rate;</li>
+<li>return the original columns plus
+<code>imputed_glucose_value</code>.</li>
 </ol>
 </div>
 <div class="section level2">
@@ -142,8 +158,8 @@ timestamp column, glucose column, age, and HbA1c.</p>
 <span><span class="co">#&gt; 5:      11     132 2020:01:16:00:20    34   6.4</span></span>
 <span><span class="co">#&gt; 6:      11     132 2020:01:16:00:25    34   6.4</span></span></code></pre></div>
 <p>The example data intentionally does not include
-<code>TimeSeries</code>. The imputation function creates that column
-internally from the raw <code>Time</code> column.</p>
+<code>TimeSeries</code>. The imputation function creates required time
+features internally from the raw <code>Time</code> column.</p>
 </div>
 <div class="section level2">
 <h2 id="required-input-columns">Required input columns<a class="anchor" aria-label="anchor" href="#required-input-columns"></a>
@@ -186,6 +202,105 @@ when present, is internally encoded as <code>M = 1</code> and
 <code>F = 0</code>.</p>
 </div>
 <div class="section level2">
+<h2 id="what-counts-as-missing">What counts as missing?<a class="anchor" aria-label="anchor" href="#what-counts-as-missing"></a>
+</h2>
+<p>CGM exports can represent missingness in two ways.</p>
+<div class="section level3">
+<h3 id="explicit-missing-glucose-values">Explicit missing glucose values<a class="anchor" aria-label="anchor" href="#explicit-missing-glucose-values"></a>
+</h3>
+<p>A row exists, but the glucose value is missing:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Time</th>
+<th align="right">LBORRES</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>00:00</td>
+<td align="right">120</td>
+</tr>
+<tr class="even">
+<td>00:05</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td>00:10</td>
+<td align="right">125</td>
+</tr>
+</tbody>
+</table>
+<p>The row with <code>LBORRES = NA</code> is imputed.</p>
+</div>
+<div class="section level3">
+<h3 id="timestamp-gaps">Timestamp gaps<a class="anchor" aria-label="anchor" href="#timestamp-gaps"></a>
+</h3>
+<p>A row is absent entirely, producing a jump in the timestamp
+sequence:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Time</th>
+<th align="right">LBORRES</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>00:00</td>
+<td align="right">120</td>
+</tr>
+<tr class="even">
+<td>00:05</td>
+<td align="right">122</td>
+</tr>
+<tr class="odd">
+<td>00:30</td>
+<td align="right">130</td>
+</tr>
+</tbody>
+</table>
+<p>With <code>interval_minutes = 5</code>, the function internally
+regularizes this to:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Time</th>
+<th align="right">LBORRES</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>00:00</td>
+<td align="right">120</td>
+</tr>
+<tr class="even">
+<td>00:05</td>
+<td align="right">122</td>
+</tr>
+<tr class="odd">
+<td>00:10</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td>00:15</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td>00:20</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td>00:25</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td>00:30</td>
+<td align="right">130</td>
+</tr>
+</tbody>
+</table>
+<p>The inserted rows are then imputed using the same workflow as
+explicit <code>NA</code> values. Because of this, the returned data
+frame may have more rows than the input data when timestamp gaps are
+present.</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="basic-real-imputation-workflow">Basic real-imputation workflow<a class="anchor" aria-label="anchor" href="#basic-real-imputation-workflow"></a>
 </h2>
 <p>For the CRAN-safe R-native path, use
@@ -199,7 +314,6 @@ when present, is internally encoded as <code>M = 1</code> and
 <span>    id_col <span class="op">=</span> <span class="st">"USUBJID"</span>,</span>
 <span>    time_col <span class="op">=</span> <span class="st">"Time"</span>,</span>
 <span>    imputer_backend <span class="op">=</span> <span class="st">"mice"</span>,</span>
-<span>    prefer_cgmanalyzer_equal_interval <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    xgb_nrounds <span class="op">=</span> <span class="fl">5</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -211,9 +325,9 @@ when present, is internally encoded as <code>M = 1</code> and
 <span><span class="co">#&gt; [1] 500</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "USUBJID"               "LBORRES"               "Time"                 </span></span>
-<span><span class="co">#&gt; [4] "AGE"                   "hba1c"                 "TimeSeries"           </span></span>
-<span><span class="co">#&gt; [7] "imputed_glucose_value" "imputation_method"     "missing_rate"</span></span></code></pre></div>
-<p>The most important returned columns are:</p>
+<span><span class="co">#&gt; [4] "AGE"                   "hba1c"                 "imputed_glucose_value"</span></span></code></pre></div>
+<p>The returned columns are the original user-supplied columns plus
+<code>imputed_glucose_value</code>.</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -225,27 +339,19 @@ when present, is internally encoded as <code>M = 1</code> and
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Original target column, e.g. <code>LBORRES</code>
-</td>
-<td>The original glucose column. Values originally missing remain
-<code>NA</code>.</td>
+<td>Original columns</td>
+<td>The user’s input columns, including the original glucose
+column.</td>
 </tr>
 <tr class="even">
-<td><code>TimeSeries</code></td>
-<td>Numeric elapsed time feature derived from the timestamp column.</td>
+<td>Original target column, e.g. <code>LBORRES</code>
+</td>
+<td>The original glucose column. Values originally missing or inserted
+from timestamp gaps remain <code>NA</code>.</td>
 </tr>
 <tr class="odd">
 <td><code>imputed_glucose_value</code></td>
 <td>Completed glucose values after imputation.</td>
-</tr>
-<tr class="even">
-<td><code>imputation_method</code></td>
-<td>Final method used: <code>MICE+ARIMA</code> or
-<code>MICE+XGBoost</code>.</td>
-</tr>
-<tr class="odd">
-<td><code>missing_rate</code></td>
-<td>Original missing rate of the target column.</td>
 </tr>
 </tbody>
 </table>
@@ -253,26 +359,18 @@ when present, is internally encoded as <code>M = 1</code> and
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"USUBJID"</span>,</span>
 <span>  <span class="st">"Time"</span>,</span>
-<span>  <span class="st">"TimeSeries"</span>,</span>
 <span>  <span class="st">"LBORRES"</span>,</span>
-<span>  <span class="st">"imputed_glucose_value"</span>,</span>
-<span>  <span class="st">"imputation_method"</span>,</span>
-<span>  <span class="st">"missing_rate"</span></span>
+<span>  <span class="st">"AGE"</span>,</span>
+<span>  <span class="st">"hba1c"</span>,</span>
+<span>  <span class="st">"imputed_glucose_value"</span></span>
 <span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   USUBJID             Time TimeSeries LBORRES imputed_glucose_value</span></span>
-<span><span class="co">#&gt; 1      11 2020:01:16:00:00          0     150                   150</span></span>
-<span><span class="co">#&gt; 2      11 2020:01:16:00:05          5     134                   134</span></span>
-<span><span class="co">#&gt; 3      11 2020:01:16:00:10         10     125                   125</span></span>
-<span><span class="co">#&gt; 4      11 2020:01:16:00:15         15     132                   132</span></span>
-<span><span class="co">#&gt; 5      11 2020:01:16:00:20         20     132                   132</span></span>
-<span><span class="co">#&gt; 6      11 2020:01:16:00:25         25     132                   132</span></span>
-<span><span class="co">#&gt;   imputation_method missing_rate</span></span>
-<span><span class="co">#&gt; 1      MICE+XGBoost          0.1</span></span>
-<span><span class="co">#&gt; 2      MICE+XGBoost          0.1</span></span>
-<span><span class="co">#&gt; 3      MICE+XGBoost          0.1</span></span>
-<span><span class="co">#&gt; 4      MICE+XGBoost          0.1</span></span>
-<span><span class="co">#&gt; 5      MICE+XGBoost          0.1</span></span>
-<span><span class="co">#&gt; 6      MICE+XGBoost          0.1</span></span></code></pre></div>
+<span><span class="co">#&gt;   USUBJID                Time LBORRES AGE hba1c imputed_glucose_value</span></span>
+<span><span class="co">#&gt; 1      11 2020-01-16 00:00:00     150  34   6.4                   150</span></span>
+<span><span class="co">#&gt; 2      11 2020-01-16 00:05:00     134  34   6.4                   134</span></span>
+<span><span class="co">#&gt; 3      11 2020-01-16 00:10:00     125  34   6.4                   125</span></span>
+<span><span class="co">#&gt; 4      11 2020-01-16 00:15:00     132  34   6.4                   132</span></span>
+<span><span class="co">#&gt; 5      11 2020-01-16 00:20:00     132  34   6.4                   132</span></span>
+<span><span class="co">#&gt; 6      11 2020-01-16 00:25:00     132  34   6.4                   132</span></span></code></pre></div>
 <p>The original target column is not overwritten:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">CGMExmplDat10Pct</span><span class="op">$</span><span class="va">LBORRES</span><span class="op">)</span><span class="op">)</span></span>
@@ -281,81 +379,138 @@ when present, is internally encoded as <code>M = 1</code> and
 <span><span class="co">#&gt; [1] 50</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">$</span><span class="va">imputed_glucose_value</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<p>Inspect only the rows where glucose was originally missing:</p>
+<p>Inspect rows where the original target column is missing. These
+include explicit missing glucose values and, when timestamp gaps are
+present, rows inserted during timestamp regularization.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">missing_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">$</span><span class="va">LBORRES</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">[</span><span class="va">missing_rows</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"USUBJID"</span>,</span>
 <span>  <span class="st">"Time"</span>,</span>
 <span>  <span class="st">"LBORRES"</span>,</span>
-<span>  <span class="st">"imputed_glucose_value"</span>,</span>
-<span>  <span class="st">"imputation_method"</span></span>
+<span>  <span class="st">"imputed_glucose_value"</span></span>
 <span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    USUBJID             Time LBORRES imputed_glucose_value imputation_method</span></span>
-<span><span class="co">#&gt; 10      11 2020:01:16:00:45      NA              158.1355      MICE+XGBoost</span></span>
-<span><span class="co">#&gt; 31      11 2020:01:16:02:30      NA              148.1590      MICE+XGBoost</span></span>
-<span><span class="co">#&gt; 32      11 2020:01:16:02:35      NA              152.9331      MICE+XGBoost</span></span>
-<span><span class="co">#&gt; 33      11 2020:01:16:02:40      NA              151.6519      MICE+XGBoost</span></span>
-<span><span class="co">#&gt; 34      11 2020:01:16:02:45      NA              152.9331      MICE+XGBoost</span></span>
-<span><span class="co">#&gt; 55      11 2020:01:16:04:30      NA              147.2657      MICE+XGBoost</span></span></code></pre></div>
+<span><span class="co">#&gt;    USUBJID                Time LBORRES imputed_glucose_value</span></span>
+<span><span class="co">#&gt; 10      11 2020-01-16 00:45:00      NA              159.3147</span></span>
+<span><span class="co">#&gt; 31      11 2020-01-16 02:30:00      NA              148.3185</span></span>
+<span><span class="co">#&gt; 32      11 2020-01-16 02:35:00      NA              154.4872</span></span>
+<span><span class="co">#&gt; 33      11 2020-01-16 02:40:00      NA              147.4133</span></span>
+<span><span class="co">#&gt; 34      11 2020-01-16 02:45:00      NA              153.1695</span></span>
+<span><span class="co">#&gt; 55      11 2020-01-16 04:30:00      NA              147.4133</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="how-the-method-is-selected">How the method is selected<a class="anchor" aria-label="anchor" href="#how-the-method-is-selected"></a>
 </h2>
 <p>The function automatically chooses the final imputation model from
-the target missing rate:</p>
+the target missing rate after timestamp-gap regularization:</p>
 <ul>
-<li>if missing rate is less than or equal to
+<li>if the missing rate is less than or equal to
 <code>use_arima_if_missing_leq</code>, the final method is
 <code>MICE+ARIMA</code>;</li>
 <li>otherwise, the final method is <code>MICE+XGBoost</code>.</li>
 </ul>
 <p>The default threshold is <code>0.05</code>.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">$</span><span class="va">missing_rate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">$</span><span class="va">imputation_method</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "MICE+XGBoost"</span></span></code></pre></div>
-<p>For data sets with more than 5% target missingness, the default final
-method is usually <code>MICE+XGBoost</code>. For lower missingness, the
-function uses segmentwise ARIMA when enough subject-level history is
-available.</p>
+<p>Method labels and missingness-tracking columns are internal
+implementation details in the minimal user-facing output. The returned
+data frame keeps only the original input columns plus
+<code>imputed_glucose_value</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="time-handling">Time handling<a class="anchor" aria-label="anchor" href="#time-handling"></a>
+<h2 id="time-handling-and-timestamp-regularization">Time handling and timestamp regularization<a class="anchor" aria-label="anchor" href="#time-handling-and-timestamp-regularization"></a>
 </h2>
 <p>The function accepts common timestamp formats, including
 colon-separated, hyphen-separated, slash-separated, ISO-style, and
 <code>POSIXct</code> inputs.</p>
 <p>Examples of accepted character formats include:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="st">"2020:01:16:00:00"</span></span>
 <span><span class="st">"2020-01-16 00:00:00"</span></span>
 <span><span class="st">"2020/01/16 00:00:00"</span></span>
 <span><span class="st">"01/16/2020 00:00"</span></span>
 <span><span class="st">"2020-01-16T00:00:00"</span></span></code></pre></div>
-<p>If a non-empty <code>TimeSeries</code> column is already present, the
-function reuses it. Otherwise, it creates <code>TimeSeries</code> from
-the timestamp column.</p>
-<p>For quieter reproducible examples, this vignette uses:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">prefer_cgmanalyzer_equal_interval</span> <span class="op">=</span> <span class="cn">FALSE</span></span></code></pre></div>
-<p>That bypasses <code><a href="https://rdrr.io/pkg/CGManalyzer/man/equalInterval.fn.html" class="external-link">CGManalyzer::equalInterval.fn()</a></code> and uses
-elapsed minutes by subject. Users who want the CGManalyzer
-equal-interval behavior can leave the default value as
-<code>TRUE</code>.</p>
+<p>The function uses the timestamp column and
+<code>interval_minutes</code> to regularize each subject’s data to an
+expected CGM interval. The default is:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">interval_minutes</span> <span class="op">=</span> <span class="fl">5</span></span></code></pre></div>
+<p>Observed timestamps are aligned to the subject-level interval grid,
+missing grid positions are inserted, and the inserted target values are
+set to <code>NA</code> before imputation.</p>
 </div>
 <div class="section level2">
 <h2 id="internal-engineered-features">Internal engineered features<a class="anchor" aria-label="anchor" href="#internal-engineered-features"></a>
 </h2>
-<p>The workflow creates lag and rolling-mean features before imputation.
-These features are used internally by the imputer and final model, but
-they are not included in the returned data frame.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^lag[0-9]+$|^rollmean$"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<p>The workflow creates <code>TimeSeries</code>,
+<code>TimeDifferenceMinutes</code>, lag features, and a rolling mean
+before imputation. These features help the model use temporal order,
+time spacing, and recent glucose history.</p>
+<p>For example, after timestamp regularization, lag features are created
+on the expanded grid:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Time</th>
+<th align="right">LBORRES</th>
+<th align="right">lag1</th>
+<th align="right">lag2</th>
+<th align="right">lag3</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>00:00</td>
+<td align="right">120</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td>00:05</td>
+<td align="right">122</td>
+<td align="right">120</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td>00:10</td>
+<td align="right">NA</td>
+<td align="right">122</td>
+<td align="right">120</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td>00:15</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">122</td>
+<td align="right">120</td>
+</tr>
+<tr class="odd">
+<td>00:20</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">122</td>
+</tr>
+</tbody>
+</table>
+<p>These engineered columns are used internally by the imputer and final
+model but are removed from the returned data frame.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^lag[0-9]+$|^rollmean$|^TimeSeries$|^TimeDifferenceMinutes$"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; character(0)</span></span></code></pre></div>
 <p>This should return an empty character vector because those features
 are internal implementation details.</p>
+</div>
+<div class="section level2">
+<h2 id="continuous-imputed-values">Continuous imputed values<a class="anchor" aria-label="anchor" href="#continuous-imputed-values"></a>
+</h2>
+<p><code>imputed_glucose_value</code> is returned as a continuous
+numeric model estimate. It is not rounded to the nearest whole number by
+default because downstream analyses may benefit from retaining the
+model-estimated precision.</p>
+<p>Users who need whole-number glucose values for reporting can round
+after imputation:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">impute_out</span><span class="op">$</span><span class="va">imputed_glucose_value_rounded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">impute_out</span><span class="op">$</span><span class="va">imputed_glucose_value</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="optional-python-compatible-backend">Optional Python-compatible backend<a class="anchor" aria-label="anchor" href="#optional-python-compatible-backend"></a>
@@ -409,8 +564,7 @@ backend:</p>
 <span>  <span class="st">"USUBJID"</span>,</span>
 <span>  <span class="st">"Time"</span>,</span>
 <span>  <span class="st">"LBORRES"</span>,</span>
-<span>  <span class="st">"imputed_glucose_value"</span>,</span>
-<span>  <span class="st">"imputation_method"</span></span>
+<span>  <span class="st">"imputed_glucose_value"</span></span>
 <span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p>The Python backend is optional. It is not required for package
 installation or for building this vignette.</p>
@@ -463,8 +617,8 @@ frame to a timestamped CSV file in the current working directory.</p>
 <span>  imputer_backend <span class="op">=</span> <span class="st">"mice"</span>,</span>
 <span>  export <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The function still returns the data frame invisibly to the assignment
-target.</p>
+<p>The exported CSV contains the original input columns plus
+<code>imputed_glucose_value</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
@@ -479,6 +633,16 @@ target.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">your_data</span><span class="op">$</span><span class="va">Time</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Use a standard format such as <code>YYYY-mm-dd HH:MM:SS</code>,
 <code>YYYY:mm:dd:HH:MM</code>, or a <code>POSIXct</code> column.</p>
+</div>
+<div class="section level3">
+<h3 id="unexpected-row-counts">Unexpected row counts<a class="anchor" aria-label="anchor" href="#unexpected-row-counts"></a>
+</h3>
+<p>If the returned data frame has more rows than the input data, this is
+expected when timestamp gaps are present. The function creates rows for
+missing expected CGM readings before imputation.</p>
+<p>If the increase is larger than expected, inspect whether the
+timestamp column contains off-grid times such as seconds, irregular
+minutes, or mixed timestamp formats.</p>
 </div>
 <div class="section level3">
 <h3 id="python-module-errors">Python module errors<a class="anchor" aria-label="anchor" href="#python-module-errors"></a>

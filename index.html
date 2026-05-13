@@ -65,9 +65,6 @@
 </h1></div>
 <!-- badges: start -->
 
-<div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
-</h2>
 <p>Install the released version from CRAN:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"CGMissingDataR"</span><span class="op">)</span></span></code></pre></div>
@@ -75,32 +72,34 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ZhangLabUKY/CGMissingDataR"</span><span class="op">)</span></span></code></pre></div>
-<p>CGMissingDataR imputes glucose values that are already missing in continuous glucose monitoring (CGM) data. The main public workflow is:</p>
+<p>CGMissingDataR imputes missing glucose values in continuous glucose monitoring (CGM) data. The main public workflow is:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>The function accepts a data frame with a subject identifier, timestamp column, glucose column, and optional subject-level or visit-level covariates. It returns the original data with completed glucose values in <code>imputed_glucose_value</code> while leaving the original glucose column unchanged.</p>
-</div>
+<p>The function handles both explicit missing glucose values coded as <code>NA</code> and implicit missing readings caused by timestamp gaps. It accepts a data frame with a subject identifier, timestamp column, glucose column, and optional subject-level or visit-level covariates. It returns the user’s original columns plus <code>imputed_glucose_value</code>, leaving the original glucose column unchanged.</p>
 <div class="section level2">
 <h2 id="what-the-imputation-workflow-does">What the imputation workflow does<a class="anchor" aria-label="anchor" href="#what-the-imputation-workflow-does"></a>
 </h2>
 <p><code><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> performs the following steps:</p>
 <ol style="list-style-type: decimal">
-<li>reads a data frame or CSV file,</li>
-<li>creates or reuses a <code>TimeSeries</code> column,</li>
-<li>encodes <code>SEX</code> when present,</li>
-<li>creates internal lag and rolling-mean glucose features,</li>
-<li>imputes the target and feature matrix,</li>
-<li>chooses the final model from the observed missing rate:
+<li>reads a data frame or CSV file;</li>
+<li>parses and sorts timestamps within each subject;</li>
+<li>regularizes each subject to an equal <code>interval_minutes</code> timestamp grid;</li>
+<li>converts missing timestamp gaps into explicit rows with <code>target_col = NA</code>;</li>
+<li>encodes <code>SEX</code> when present;</li>
+<li>creates internal time, lag, and rolling-mean glucose features;</li>
+<li>imputes the target and feature matrix;</li>
+<li>chooses the final model from the post-regularization target missing rate:
 <ul>
 <li>
 <code>MICE+ARIMA</code> when missing rate is <code>&lt;= 0.05</code>,</li>
 <li>
-<code>MICE+XGBoost</code> when missing rate is <code>&gt; 0.05</code>,</li>
+<code>MICE+XGBoost</code> when missing rate is <code>&gt; 0.05</code>;</li>
 </ul>
 </li>
-<li>returns a single completed data frame.</li>
+<li>returns a single completed data frame containing the original input columns plus <code>imputed_glucose_value</code>.</li>
 </ol>
-<p>Generated lag columns and <code>rollmean</code> are used internally and removed before the final data frame is returned.</p>
+<p>Internal columns such as <code>TimeSeries</code>, <code>TimeDifferenceMinutes</code>, lag features, rolling means, imputation method labels, and missingness-tracking flags are used for modeling but are not returned.</p>
+<p>Because timestamp gaps are converted into explicit rows before imputation, the returned data frame may contain more rows than the input data when readings are absent from the expected CGM sampling grid.</p>
 <p>The default R-native backend uses the R package <code>mice</code>. For closest agreement with the Python reference workflow, install <code>reticulate</code> and use the optional Python backend.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"reticulate"</span><span class="op">)</span></span></code></pre></div>
@@ -128,35 +127,46 @@
 <span>  feature_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"AGE"</span>, <span class="st">"hba1c"</span><span class="op">)</span>,</span>
 <span>  id_col <span class="op">=</span> <span class="st">"USUBJID"</span>,</span>
 <span>  time_col <span class="op">=</span> <span class="st">"Time"</span>,</span>
-<span>  imputer_backend <span class="op">=</span> <span class="st">"mice"</span>,</span>
-<span>  prefer_cgmanalyzer_equal_interval <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  imputer_backend <span class="op">=</span> <span class="st">"mice"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">out</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"USUBJID"</span>,</span>
 <span>  <span class="st">"Time"</span>,</span>
 <span>  <span class="st">"LBORRES"</span>,</span>
-<span>  <span class="st">"imputed_glucose_value"</span>,</span>
-<span>  <span class="st">"imputation_method"</span>,</span>
-<span>  <span class="st">"missing_rate"</span></span>
+<span>  <span class="st">"AGE"</span>,</span>
+<span>  <span class="st">"hba1c"</span>,</span>
+<span>  <span class="st">"imputed_glucose_value"</span></span>
 <span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<p>The original target column is not overwritten. Rows that were missing in <code>LBORRES</code> remain missing there, and the completed value is stored in <code>imputed_glucose_value</code>.</p>
+<p>The original target column is not overwritten. Rows that were missing in <code>LBORRES</code>, including rows inserted from timestamp gaps, remain missing there; the completed value is stored in <code>imputed_glucose_value</code>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">missing_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">LBORRES</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">out</span><span class="op">[</span><span class="va">missing_rows</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"USUBJID"</span>,</span>
 <span>  <span class="st">"Time"</span>,</span>
 <span>  <span class="st">"LBORRES"</span>,</span>
-<span>  <span class="st">"imputed_glucose_value"</span>,</span>
-<span>  <span class="st">"imputation_method"</span></span>
+<span>  <span class="st">"imputed_glucose_value"</span></span>
 <span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p><code>imputed_glucose_value</code> is returned as a continuous numeric model estimate. Users who need whole-number glucose values for reporting can round after imputation:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">out</span><span class="op">$</span><span class="va">imputed_glucose_value_rounded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">imputed_glucose_value</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="timestamp-gaps">Timestamp gaps<a class="anchor" aria-label="anchor" href="#timestamp-gaps"></a>
+</h2>
+<p>Raw CGM exports may represent missingness in two ways:</p>
+<ul>
+<li>a row exists but the glucose value is <code>NA</code>;</li>
+<li>a timestamp is absent entirely, causing a gap in the expected sampling grid.</li>
+</ul>
+<p>For example, if a subject’s readings jump from <code>00:05</code> to <code>00:30</code>, the function internally creates the missing 5-minute rows at <code>00:10</code>, <code>00:15</code>, <code>00:20</code>, and <code>00:25</code>, sets the target glucose value to <code>NA</code>, and then imputes those values using the same workflow as explicit missing glucose values.</p>
 </div>
 <div class="section level2">
 <h2 id="bundled-shiny-app">Bundled Shiny app<a class="anchor" aria-label="anchor" href="#bundled-shiny-app"></a>
 </h2>
-<p>CGMissingDataR also includes a small Shiny app for users who prefer an interactive workflow. The app lets users upload a CSV file or load one of the built-in example data sets, choose the target glucose, subject ID, timestamp, and feature columns, run <code><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code>, preview the rows that were originally missing and imputed, and download the completed data as a CSV file.</p>
+<p>CGMissingDataR also includes a small Shiny app for users who prefer an interactive workflow. The app lets users upload a CSV file or load one of the built-in example data sets, choose the target glucose, subject ID, timestamp, and feature columns, run <code><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code>, preview rows with missing glucose values that were imputed, and download the completed data as a CSV file.</p>
 <p>Launch the app from R with:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/run_app.html">run_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The app supports the same two imputation backends as the main function:</p>
 <ul>
@@ -166,7 +176,7 @@
 <code>sklearn</code>, the optional Python-compatible backend using <code>reticulate</code>.</li>
 </ul>
 <p>The Shiny app is optional. If it is not already installed, install Shiny with:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"shiny"</span><span class="op">)</span></span></code></pre></div>
 <p>For package developers, the app is stored under <code>inst/shiny/cgm_imputation_app/</code> and is launched through the exported <code><a href="reference/run_app.html">run_app()</a></code> helper.</p>
 </div>
@@ -174,7 +184,7 @@
 <h2 id="optional-python-compatible-backend">Optional Python-compatible backend<a class="anchor" aria-label="anchor" href="#optional-python-compatible-backend"></a>
 </h2>
 <p>Use <code>imputer_backend = "sklearn"</code> to run the strict Python-compatible path. In that path, <code>reticulate</code> sends the data to Python, where pandas, scikit-learn, statsmodels, and Python xgboost perform the preprocessing and calculations. The completed pandas data frame is then converted back to R.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out_py</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span></span>
 <span>  <span class="va">CGMExmplDat10Pct</span>,</span>
 <span>  target_col <span class="op">=</span> <span class="st">"LBORRES"</span>,</span>
@@ -188,7 +198,7 @@
 <div class="section level2">
 <h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
-<p>The main vignette contains a detailed walkthrough of data requirements, return columns, backend selection, optional Python setup, and troubleshooting:</p>
+<p>The main vignette contains a detailed walkthrough of data requirements, timestamp regularization, return columns, backend selection, optional Python setup, and troubleshooting:</p>
 <p><a href="https://zhanglabuky.github.io/CGMissingDataR/articles/How-To-Use-CGMissingDataR.html" class="uri">https://zhanglabuky.github.io/CGMissingDataR/articles/How-To-Use-CGMissingDataR.html</a></p>
 <p>A separate Shiny app vignette walks through the interactive interface:</p>
 <p><a href="https://zhanglabuky.github.io/CGMissingDataR/articles/Using-the-CGMissingDataR-Shiny-App.html" class="uri">https://zhanglabuky.github.io/CGMissingDataR/articles/Using-the-CGMissingDataR-Shiny-App.html</a></p>

@@ -17,10 +17,9 @@ The app is useful when users want to:
 - choose the target glucose, subject ID, timestamp, and feature columns
   from a user interface;
 - load built-in example data sets for demonstration;
-- inspect the observed missingness before running imputation;
+- inspect observed missingness before running imputation;
 - run the imputation workflow;
-- preview only the rows where glucose was originally missing and then
-  imputed;
+- preview rows where glucose was missing and then imputed;
 - download the completed data as a CSV file.
 
 The Shiny app does not implement a separate imputation algorithm. It
@@ -28,6 +27,12 @@ calls
 [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md)
 internally and returns the same type of completed data frame as the
 command-line workflow.
+
+The imputation workflow handles both explicit missing glucose values
+coded as `NA` and missing readings implied by timestamp gaps. During
+imputation, each subject is regularized to the expected
+`interval_minutes` timestamp grid, so the returned data can contain more
+rows than the uploaded data when timestamps are missing.
 
 ## Installation
 
@@ -59,7 +64,7 @@ Launch the app with:
 
 ``` r
 
-run_cgmissingdata_app()
+run_app()
 ```
 
 During package development, after running `devtools::load_all()`, the
@@ -68,7 +73,7 @@ same launcher can be used:
 ``` r
 
 devtools::load_all()
-run_cgmissingdata_app()
+run_app()
 ```
 
 The app is bundled inside the installed package, typically under:
@@ -83,7 +88,8 @@ system.file(
 ```
 
 Users normally do not need to access this directory directly. The
-`run_cgmissingdata_app()` launcher finds it automatically.
+[`run_app()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_app.md)
+launcher finds it automatically.
 
 ## Input options
 
@@ -114,8 +120,8 @@ The example data sets are intended to include:
 
 | Example data | Description |
 |----|----|
-| `CGMExmplDat5Pct` | Example CGM data with about 5% missing glucose values. |
-| `CGMExmplDat10Pct` | Example CGM data with about 10% missing glucose values. |
+| `CGMExmplDat5Pct` | Example CGM data with about 5% explicit missing glucose values. |
+| `CGMExmplDat10Pct` | Example CGM data with about 10% explicit missing glucose values. |
 
 After selecting an example data set and clicking **Load example data**,
 the app uses that data set exactly as if it had been uploaded by the
@@ -137,8 +143,9 @@ LBORRES
 ```
 
 The original target column is preserved in the returned data. Values
-that were originally missing remain `NA` in this original column.
-Completed glucose values are written to a new column named:
+that were originally missing, or created from timestamp gaps during
+regularization, remain `NA` in this original column. Completed glucose
+values are written to a new column named:
 
 ``` r
 
@@ -155,8 +162,9 @@ example data, this is usually:
 USUBJID
 ```
 
-The subject ID is used for sorting, lag feature creation, rolling-mean
-feature creation, and subject-level time handling.
+The subject ID is used for sorting, timestamp regularization, lag
+feature creation, rolling-mean feature creation, and subject-level time
+handling.
 
 ### Timestamp column
 
@@ -167,10 +175,10 @@ Choose the raw timestamp column. In the example data, this is usually:
 Time
 ```
 
-The imputation function creates or reuses a numeric `TimeSeries` column
-from the timestamp values. Common timestamp formats are supported,
-including colon-separated, hyphen-separated, slash-separated, ISO-style,
-and `POSIXct` values.
+The imputation function uses this timestamp column to regularize each
+subject to an equal `interval_minutes` CGM grid before imputation.
+Common timestamp formats are supported, including colon-separated,
+hyphen-separated, slash-separated, ISO-style, and `POSIXct` values.
 
 ### Feature columns
 
@@ -189,18 +197,31 @@ column is present, the underlying function can encode it internally.
 ## Missingness summary card
 
 The app includes a missingness summary card beside the uploaded data
-preview. After a target glucose column is selected, this card shows:
+preview. After a target glucose column is selected, this card shows the
+observed missingness in the loaded data before imputation:
 
-- the percentage of missing values in the target column;
-- the number of missing rows;
-- the total number of rows;
+- the percentage of explicit missing values in the selected target
+  column;
+- the number of explicit missing rows;
+- the total number of uploaded rows;
 - a warning style when missingness is greater than the chosen threshold,
   such as 20%.
 
 This card is intended as a quick data-quality check before running the
-imputation workflow. Higher missingness does not necessarily mean
-imputation cannot be run, but users should interpret results carefully
-when a large portion of the target glucose column is missing.
+imputation workflow. Timestamp gaps are handled during imputation, so
+the final number of rows imputed can be larger than the explicit missing
+count shown in this pre-imputation summary.
+
+## Timestamp-gap handling
+
+When imputation runs, the underlying function regularizes each subject
+to the expected `interval_minutes` grid. For example, if readings jump
+from `00:05` to `00:30`, the function internally creates the missing
+rows at `00:10`, `00:15`, `00:20`, and `00:25`, sets the target glucose
+value to `NA`, and then imputes those values.
+
+This means the downloaded data can contain more rows than the uploaded
+data when there are timestamp gaps.
 
 ## Backend selection
 
@@ -282,22 +303,24 @@ out <- run_missing_glucose_imputation(
 )
 ```
 
-The returned object is a data frame. The most important columns are:
+The returned object is a data frame containing the original input
+columns plus:
 
-| Column | Meaning |
-|----|----|
-| Original target column | Original glucose values; originally missing values remain `NA`. |
-| `TimeSeries` | Numeric time feature derived from the timestamp column. |
+| Column                  | Meaning                                    |
+|-------------------------|--------------------------------------------|
 | `imputed_glucose_value` | Completed glucose values after imputation. |
-| `imputation_method` | Final method used, such as `MICE+ARIMA` or `MICE+XGBoost`. |
-| `missing_rate` | Original missingness rate of the target glucose column. |
+
+The original target glucose column is left unchanged. Internal time
+features, lag features, rolling means, model labels, and
+missingness-tracking flags are used during imputation but are not
+included in the returned or downloaded data.
 
 ## Previewing results
 
-After imputation, the app displays a preview of rows where the original
-target glucose value was missing. This is more informative than showing
-only the first few rows of the completed data set because it lets users
-directly inspect the newly imputed values.
+After imputation, the app displays a preview of rows where the target
+glucose value is missing in the returned data. This includes explicit
+missing glucose values and, when timestamp gaps exist, rows inserted
+during timestamp regularization.
 
 For example, the preview is based on logic like:
 
@@ -312,19 +335,15 @@ The full completed data frame remains available for download.
 ## Downloading results
 
 Use the **Download imputed CSV** button to save the completed data set.
-The CSV contains all returned columns from
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md),
-including:
+The CSV is intentionally minimal and contains:
 
-- the original glucose column;
-- `TimeSeries`;
-- `imputed_glucose_value`;
-- `imputation_method`;
-- `missing_rate`;
-- any original input columns retained by the workflow.
+- the original uploaded columns;
+- any rows inserted from timestamp gaps;
+- `imputed_glucose_value`.
 
-Internal lag and rolling-mean columns are used during imputation but are
-removed from the returned data frame before display or download.
+`imputed_glucose_value` is returned as a continuous numeric model
+estimate. If whole-number glucose values are needed for reporting, users
+can round the column after download.
 
 ## Troubleshooting
 
@@ -341,7 +360,7 @@ Then restart R and try:
 
 ``` r
 
-run_cgmissingdata_app()
+run_app()
 ```
 
 ### No column choices appear
@@ -364,6 +383,11 @@ parseable dates or datetimes, for example:
 
 If the wrong column was selected as the timestamp column, select the
 correct column and rerun imputation.
+
+### Downloaded data have more rows than the uploaded file
+
+This can be expected. The imputation workflow creates missing expected
+CGM rows from timestamp gaps before imputing glucose values.
 
 ### Python backend fails because a Python module is missing
 
@@ -408,7 +432,7 @@ The launcher should live in an exported R function, for example:
 
 ``` r
 
-run_cgmissingdata_app <- function() {
+run_app <- function() {
   app_dir <- system.file(
     "shiny",
     "cgm_imputation_app",

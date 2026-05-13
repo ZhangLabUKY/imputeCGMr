@@ -1,7 +1,5 @@
 # CGMissingDataR
 
-## Installation
-
 Install the released version from CRAN:
 
 ``` r
@@ -17,37 +15,49 @@ install.packages("devtools")
 devtools::install_github("ZhangLabUKY/CGMissingDataR")
 ```
 
-CGMissingDataR imputes glucose values that are already missing in
-continuous glucose monitoring (CGM) data. The main public workflow is:
+CGMissingDataR imputes missing glucose values in continuous glucose
+monitoring (CGM) data. The main public workflow is:
 
 ``` r
 
 run_missing_glucose_imputation()
 ```
 
-The function accepts a data frame with a subject identifier, timestamp
-column, glucose column, and optional subject-level or visit-level
-covariates. It returns the original data with completed glucose values
-in `imputed_glucose_value` while leaving the original glucose column
-unchanged.
+The function handles both explicit missing glucose values coded as `NA`
+and implicit missing readings caused by timestamp gaps. It accepts a
+data frame with a subject identifier, timestamp column, glucose column,
+and optional subject-level or visit-level covariates. It returns the
+user’s original columns plus `imputed_glucose_value`, leaving the
+original glucose column unchanged.
 
 ## What the imputation workflow does
 
 [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md)
 performs the following steps:
 
-1.  reads a data frame or CSV file,
-2.  creates or reuses a `TimeSeries` column,
-3.  encodes `SEX` when present,
-4.  creates internal lag and rolling-mean glucose features,
-5.  imputes the target and feature matrix,
-6.  chooses the final model from the observed missing rate:
+1.  reads a data frame or CSV file;
+2.  parses and sorts timestamps within each subject;
+3.  regularizes each subject to an equal `interval_minutes` timestamp
+    grid;
+4.  converts missing timestamp gaps into explicit rows with
+    `target_col = NA`;
+5.  encodes `SEX` when present;
+6.  creates internal time, lag, and rolling-mean glucose features;
+7.  imputes the target and feature matrix;
+8.  chooses the final model from the post-regularization target missing
+    rate:
     - `MICE+ARIMA` when missing rate is `<= 0.05`,
-    - `MICE+XGBoost` when missing rate is `> 0.05`,
-7.  returns a single completed data frame.
+    - `MICE+XGBoost` when missing rate is `> 0.05`;
+9.  returns a single completed data frame containing the original input
+    columns plus `imputed_glucose_value`.
 
-Generated lag columns and `rollmean` are used internally and removed
-before the final data frame is returned.
+Internal columns such as `TimeSeries`, `TimeDifferenceMinutes`, lag
+features, rolling means, imputation method labels, and
+missingness-tracking flags are used for modeling but are not returned.
+
+Because timestamp gaps are converted into explicit rows before
+imputation, the returned data frame may contain more rows than the input
+data when readings are absent from the expected CGM sampling grid.
 
 The default R-native backend uses the R package `mice`. For closest
 agreement with the Python reference workflow, install `reticulate` and
@@ -85,23 +95,22 @@ out <- run_missing_glucose_imputation(
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
   time_col = "Time",
-  imputer_backend = "mice",
-  prefer_cgmanalyzer_equal_interval = FALSE
+  imputer_backend = "mice"
 )
 
 head(out[c(
   "USUBJID",
   "Time",
   "LBORRES",
-  "imputed_glucose_value",
-  "imputation_method",
-  "missing_rate"
+  "AGE",
+  "hba1c",
+  "imputed_glucose_value"
 )])
 ```
 
 The original target column is not overwritten. Rows that were missing in
-`LBORRES` remain missing there, and the completed value is stored in
-`imputed_glucose_value`.
+`LBORRES`, including rows inserted from timestamp gaps, remain missing
+there; the completed value is stored in `imputed_glucose_value`.
 
 ``` r
 
@@ -110,10 +119,32 @@ head(out[missing_rows, c(
   "USUBJID",
   "Time",
   "LBORRES",
-  "imputed_glucose_value",
-  "imputation_method"
+  "imputed_glucose_value"
 )])
 ```
+
+`imputed_glucose_value` is returned as a continuous numeric model
+estimate. Users who need whole-number glucose values for reporting can
+round after imputation:
+
+``` r
+
+out$imputed_glucose_value_rounded <- round(out$imputed_glucose_value)
+```
+
+## Timestamp gaps
+
+Raw CGM exports may represent missingness in two ways:
+
+- a row exists but the glucose value is `NA`;
+- a timestamp is absent entirely, causing a gap in the expected sampling
+  grid.
+
+For example, if a subject’s readings jump from `00:05` to `00:30`, the
+function internally creates the missing 5-minute rows at `00:10`,
+`00:15`, `00:20`, and `00:25`, sets the target glucose value to `NA`,
+and then imputes those values using the same workflow as explicit
+missing glucose values.
 
 ## Bundled Shiny app
 
@@ -122,7 +153,7 @@ interactive workflow. The app lets users upload a CSV file or load one
 of the built-in example data sets, choose the target glucose, subject
 ID, timestamp, and feature columns, run
 [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md),
-preview the rows that were originally missing and imputed, and download
+preview rows with missing glucose values that were imputed, and download
 the completed data as a CSV file.
 
 Launch the app from R with:
@@ -176,8 +207,8 @@ installation, loading, or CRAN examples.
 ## Learn more
 
 The main vignette contains a detailed walkthrough of data requirements,
-return columns, backend selection, optional Python setup, and
-troubleshooting:
+timestamp regularization, return columns, backend selection, optional
+Python setup, and troubleshooting:
 
 <https://zhanglabuky.github.io/CGMissingDataR/articles/How-To-Use-CGMissingDataR.html>
 

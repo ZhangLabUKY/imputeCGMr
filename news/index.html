@@ -46,34 +46,14 @@
 <h2 class="pkg-version" data-toc-text="0.0.2" id="cgmissingdatar-002">CGMissingDataR 0.0.2<a class="anchor" aria-label="anchor" href="#cgmissingdatar-002"></a></h2>
 <div class="section level3">
 <h3 id="major-changes-0-0-2">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-0-0-2"></a></h3>
-<ul><li><ul><li>Added a package-bundled Shiny app for interactive missing glucose imputation. The app lets users upload a CSV file, select the target glucose, subject ID, timestamp, and feature columns, run <code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code>, preview imputed rows, and download the completed data as a CSV file.</li>
-</ul></li>
-<li><p>Refocused the package documentation around real missing glucose imputation with <code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code>.</p></li>
-<li><p>Updated <code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> to return a single completed data frame rather than nested model-specific output objects.</p></li>
-<li><p>Added the completed glucose column <code>imputed_glucose_value</code> while preserving the original glucose column unchanged. Rows that were originally missing in the target column remain <code>NA</code> in that original column.</p></li>
-<li><p>Added method labels through <code>imputation_method</code>, currently either <code>"MICE+ARIMA"</code> or <code>"MICE+XGBoost"</code>.</p></li>
-<li><p>Added <code>missing_rate</code>, the observed missingness rate in the target glucose column before imputation.</p></li>
-<li><p>Added automatic workflow selection based on the observed target missing rate: <code>MICE+ARIMA</code> is used when the missing rate is less than or equal to 5%, and <code>MICE+XGBoost</code> is used when the missing rate is greater than 5%.</p></li>
-<li><p>Added internal lag and rolling-mean feature construction for imputation and modeling. These engineered columns are used internally and removed from the returned data frame.</p></li>
-<li><p>Added support for common timestamp inputs, including colon-separated timestamps, ISO-style timestamps, slash-separated timestamps, and <code>POSIXct</code> values.</p></li>
-<li><p>Added an optional Python-compatible backend through <code>imputer_backend = "sklearn"</code>. This path uses <code>reticulate</code> to call Python modules directly, including <code>pandas</code>, <code>scikit-learn</code>, <code>statsmodels</code>, and Python <code>xgboost</code>.</p></li>
-<li><p>Kept <code>imputer_backend = "mice"</code> as the CRAN-safe default backend.</p></li>
-<li><p>Added optional Python-engine tests that are skipped by default and only run when explicitly enabled with the <code>CGMISSINGDATAR_TEST_PYTHON</code> environment variable.</p></li>
-<li><p>Updated README and vignette documentation to describe the imputation workflow, output columns, timestamp handling, backend options, and optional reticulate setup.</p></li>
-</ul></div>
-<div class="section level3">
-<h3 id="documentation-0-0-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-0-2"></a></h3>
-<ul><li><p>Added documentation for launching and using the Shiny app.</p></li>
-<li><p>Updated examples to focus on real missing glucose imputation with <code>CGMExmplDat10Pct</code>.</p></li>
-<li><p>Documented the difference between the default R-native MICE backend and the optional Python-compatible sklearn backend.</p></li>
-<li><p>Documented the expected output structure: <code>TimeSeries</code>, <code>imputed_glucose_value</code>, <code>imputation_method</code>, and <code>missing_rate</code>.</p></li>
-<li><p>Documented CRAN-safe usage of the optional Python backend.</p></li>
-</ul></div>
-<div class="section level3">
-<h3 id="package-maintenance-0-0-2">Package maintenance<a class="anchor" aria-label="anchor" href="#package-maintenance-0-0-2"></a></h3>
-<ul><li><p>Updated package version from <code>0.0.1.9000</code> to <code>0.0.2</code>.</p></li>
-<li><p>Moved <code>reticulate</code> to optional usage for the Python-compatible backend.</p></li>
-<li><p>Added and updated tests for the imputation return shape, timestamp parsing, internal feature cleanup, and optional Python backend behavior.</p></li>
+<ul><li><p><code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> now handles both explicit missing glucose values and missing readings implied by timestamp gaps. When timestamps skip expected CGM intervals, the function regularizes each subject to the expected interval and imputes the newly created missing glucose rows.</p></li>
+<li><p>The returned data frame is now simpler. It contains the user’s original columns plus <code>imputed_glucose_value</code>. Internal columns used for timestamp regularization, lag features, rolling means, model fitting, and missingness tracking are no longer returned.</p></li>
+<li><p>The original glucose column is still preserved. Values that were originally missing, or created from timestamp gaps, remain <code>NA</code> in the original target column, while completed values are stored in <code>imputed_glucose_value</code>.</p></li>
+<li><p><code>imputed_glucose_value</code> is returned as a continuous numeric model estimate. Users who need whole-number glucose values for reporting can round this column after imputation.</p></li>
+<li><p>Added a bundled Shiny app for interactive missing glucose imputation. The app lets users upload a CSV file or load example data, choose the relevant columns, run imputation, preview results, and download the completed data.</p></li>
+<li><p>Added built-in example data for demonstrating both explicit missing glucose values and timestamp-gap handling.</p></li>
+<li><p>The optional Python-compatible backend remains available with <code>imputer_backend = "sklearn"</code>. The default backend remains <code>imputer_backend = "mice"</code> for standard R usage.</p></li>
+<li><p>Updated README and vignettes to describe timestamp-gap handling, the simplified output structure, the bundled Shiny app, backend options, and post-imputation rounding.</p></li>
 </ul></div>
 </div>
     <div class="section level2">
