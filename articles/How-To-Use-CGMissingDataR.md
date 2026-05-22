@@ -86,16 +86,16 @@ summary_table <- data.frame(
 
 summary_table
 #>   Rows Columns Subjects MissingGlucose MissingPercent
-#> 1  500       5        5             50             10
+#> 1 1440       6        5            144             10
 head(CGMExmplDat10Pct)
-#>    USUBJID LBORRES             Time   AGE hba1c
-#>      <int>   <num>           <char> <int> <num>
-#> 1:      11     150 2020:01:16:00:00    34   6.4
-#> 2:      11     134 2020:01:16:00:05    34   6.4
-#> 3:      11     125 2020:01:16:00:10    34   6.4
-#> 4:      11     132 2020:01:16:00:15    34   6.4
-#> 5:      11     132 2020:01:16:00:20    34   6.4
-#> 6:      11     132 2020:01:16:00:25    34   6.4
+#>    USUBJID    SEX LBORRES             Time   AGE hba1c
+#>      <int> <char>   <num>           <char> <int> <num>
+#> 1:      11      F     150 2020:01:16:00:00    34   6.4
+#> 2:      11      F     134 2020:01:16:00:05    34   6.4
+#> 3:      11      F     125 2020:01:16:00:10    34   6.4
+#> 4:      11      F     132 2020:01:16:00:15    34   6.4
+#> 5:      11      F     132 2020:01:16:00:20    34   6.4
+#> 6:      11      F     132 2020:01:16:00:25    34   6.4
 ```
 
 The example data intentionally does not include `TimeSeries`. The
@@ -106,12 +106,12 @@ raw `Time` column.
 
 At minimum, the imputation function needs:
 
-| Role                    | Argument       | Example column |
-|-------------------------|----------------|----------------|
-| Glucose value to impute | `target_col`   | `LBORRES`      |
-| Subject identifier      | `id_col`       | `USUBJID`      |
-| Raw timestamp           | `time_col`     | `Time`         |
-| Additional predictors   | `feature_cols` | `AGE`, `hba1c` |
+| Role                    | Argument       | Example column        |
+|-------------------------|----------------|-----------------------|
+| Glucose value to impute | `target_col`   | `LBORRES`             |
+| Subject identifier      | `id_col`       | `USUBJID`             |
+| Raw timestamp           | `time_col`     | `Time`                |
+| Additional predictors   | `feature_cols` | `AGE`, `hba1c`, `SEX` |
 
 The target column may contain missing values. Predictor columns should
 be numeric or coercible to numeric. The `SEX` column, when present, is
@@ -170,7 +170,7 @@ impute_out <- suppressWarnings(
   run_missing_glucose_imputation(
     CGMExmplDat10Pct,
     target_col = "LBORRES",
-    feature_cols = c("AGE", "hba1c"),
+    feature_cols = c("AGE", "hba1c", "SEX"),
     id_col = "USUBJID",
     time_col = "Time",
     imputer_backend = "mice",
@@ -186,10 +186,11 @@ The result is a data frame:
 class(impute_out)
 #> [1] "data.frame"
 nrow(impute_out)
-#> [1] 500
+#> [1] 1440
 names(impute_out)
-#> [1] "USUBJID"               "LBORRES"               "Time"                 
-#> [4] "AGE"                   "hba1c"                 "imputed_glucose_value"
+#> [1] "USUBJID"               "SEX"                   "LBORRES"              
+#> [4] "Time"                  "AGE"                   "hba1c"                
+#> [7] "imputed_glucose_value"
 ```
 
 The returned columns are the original user-supplied columns plus
@@ -205,19 +206,20 @@ The returned columns are the original user-supplied columns plus
 
 head(impute_out[c(
   "USUBJID",
+  "SEX",
   "Time",
   "LBORRES",
   "AGE",
   "hba1c",
   "imputed_glucose_value"
 )])
-#>   USUBJID                Time LBORRES AGE hba1c imputed_glucose_value
-#> 1      11 2020-01-16 00:00:00     150  34   6.4                   150
-#> 2      11 2020-01-16 00:05:00     134  34   6.4                   134
-#> 3      11 2020-01-16 00:10:00     125  34   6.4                   125
-#> 4      11 2020-01-16 00:15:00     132  34   6.4                   132
-#> 5      11 2020-01-16 00:20:00     132  34   6.4                   132
-#> 6      11 2020-01-16 00:25:00     132  34   6.4                   132
+#>   USUBJID SEX                Time LBORRES AGE hba1c imputed_glucose_value
+#> 1      11   0 2020-01-16 00:00:00     150  34   6.4                   150
+#> 2      11   0 2020-01-16 00:05:00     134  34   6.4                   134
+#> 3      11   0 2020-01-16 00:10:00     125  34   6.4                   125
+#> 4      11   0 2020-01-16 00:15:00     132  34   6.4                   132
+#> 5      11   0 2020-01-16 00:20:00     132  34   6.4                   132
+#> 6      11   0 2020-01-16 00:25:00     132  34   6.4                   132
 ```
 
 The original target column is not overwritten:
@@ -225,9 +227,9 @@ The original target column is not overwritten:
 ``` r
 
 sum(is.na(CGMExmplDat10Pct$LBORRES))
-#> [1] 50
+#> [1] 144
 sum(is.na(impute_out$LBORRES))
-#> [1] 50
+#> [1] 144
 sum(is.na(impute_out$imputed_glucose_value))
 #> [1] 0
 ```
@@ -246,12 +248,12 @@ head(impute_out[missing_rows, c(
   "imputed_glucose_value"
 )])
 #>    USUBJID                Time LBORRES imputed_glucose_value
-#> 10      11 2020-01-16 00:45:00      NA              159.3147
-#> 31      11 2020-01-16 02:30:00      NA              148.3185
-#> 32      11 2020-01-16 02:35:00      NA              154.4872
-#> 33      11 2020-01-16 02:40:00      NA              147.4133
-#> 34      11 2020-01-16 02:45:00      NA              153.1695
-#> 55      11 2020-01-16 04:30:00      NA              147.4133
+#> 10      11 2020-01-16 00:45:00      NA              169.5005
+#> 31      11 2020-01-16 02:30:00      NA              158.6228
+#> 32      11 2020-01-16 02:35:00      NA              160.8414
+#> 33      11 2020-01-16 02:40:00      NA              158.6228
+#> 34      11 2020-01-16 02:45:00      NA              167.9637
+#> 55      11 2020-01-16 04:30:00      NA              158.6228
 ```
 
 ## How the method is selected
@@ -533,10 +535,10 @@ utils::sessionInfo()
 #> [33] rbibutils_2.4.1   splines_4.6.0     cachem_1.1.0      yaml_2.3.12      
 #> [37] pan_1.9           otel_0.2.0        FNN_1.1.4.1       tools_4.6.0      
 #> [41] nloptr_2.2.1      minqa_1.2.8       dplyr_1.2.1       ranger_0.18.0    
-#> [45] boot_1.3-32       broom_1.0.12      rpart_4.1.27      vctrs_0.7.3      
+#> [45] boot_1.3-32       broom_1.0.13      rpart_4.1.27      vctrs_0.7.3      
 #> [49] R6_2.6.1          lifecycle_1.0.5   fs_2.1.0          MASS_7.3-65      
 #> [53] ragg_1.5.2        pkgconfig_2.0.3   desc_1.4.3        pkgdown_2.2.0    
-#> [57] pillar_1.11.1     bslib_0.10.0      data.table_1.18.4 glue_1.8.1       
+#> [57] pillar_1.11.1     bslib_0.11.0      data.table_1.18.4 glue_1.8.1       
 #> [61] Rcpp_1.1.1-1.1    systemfonts_1.3.2 xfun_0.57         tibble_3.3.1     
 #> [65] tidyselect_1.2.1  knitr_1.51        nlme_3.1-169      htmltools_0.5.9  
 #> [69] rmarkdown_2.31    compiler_4.6.0

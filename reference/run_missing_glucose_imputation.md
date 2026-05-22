@@ -30,6 +30,9 @@ run_missing_glucose_imputation(
   add_rollmean = TRUE,
   roll_window = 3L,
   interval_minutes = 5L,
+  missing_warning_threshold = 0.2,
+  study_start = NULL,
+  study_end = NULL,
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
@@ -122,6 +125,24 @@ run_missing_glucose_imputation(
   default is `5`. The function uses this value to regularize each
   subject's timestamps to an equal-interval grid before imputation.
 
+- missing_warning_threshold:
+
+  Numeric value between 0 and 1. If the missingness rate in `target_col`
+  after timestamp-gap regularization exceeds this threshold, a warning
+  is issued. Default is `0.20`.
+
+- study_start:
+
+  Optional study start timestamp. If supplied, the function reports
+  subjects whose first observed CGM timestamp occurs after this time.
+  Leading study time is not imputed.
+
+- study_end:
+
+  Optional study end timestamp. If supplied, the function reports
+  subjects whose last observed CGM timestamp occurs before this time.
+  Trailing study time is not imputed.
+
 - use_arima_if_missing_leq:
 
   Numeric missing-rate threshold. If the target missing rate is less
@@ -178,6 +199,14 @@ data frame.
 estimate. Users who require whole-number glucose values for reporting
 can round this column after imputation.
 
+Missingness warnings are based on the data after timestamp-gap
+regularization, so both explicit `NA` glucose values and rows created
+from timestamp gaps contribute to the reported missingness rate. The
+function also warns when long contiguous missing blocks of at least 12
+or 24 hours are detected. If `study_start` or `study_end` is supplied,
+leading or trailing study-period coverage gaps are reported but are not
+imputed.
+
 ## Examples
 
 ``` r
@@ -195,13 +224,13 @@ out <- run_missing_glucose_imputation(
 #> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
 #> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
 #> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
-#> Warning: Number of logged events: 36
+#> Warning: Number of logged events: 37
 head(subset(out, is.na(LBORRES)))
-#>    USUBJID LBORRES                Time AGE hba1c imputed_glucose_value
-#> 10      11      NA 2020-01-16 00:45:00  34   6.4             136.17903
-#> 31      11      NA 2020-01-16 02:30:00  34   6.4              81.10538
-#> 32      11      NA 2020-01-16 02:35:00  34   6.4             106.16171
-#> 33      11      NA 2020-01-16 02:40:00  34   6.4              89.92793
-#> 34      11      NA 2020-01-16 02:45:00  34   6.4             106.08171
-#> 55      11      NA 2020-01-16 04:30:00  34   6.4              77.73082
+#>    USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value
+#> 10      11   0      NA 2020-01-16 00:45:00  34   6.4             135.28276
+#> 31      11   0      NA 2020-01-16 02:30:00  34   6.4              79.87691
+#> 32      11   0      NA 2020-01-16 02:35:00  34   6.4              78.47737
+#> 33      11   0      NA 2020-01-16 02:40:00  34   6.4              75.64531
+#> 34      11   0      NA 2020-01-16 02:45:00  34   6.4             115.65877
+#> 55      11   0      NA 2020-01-16 04:30:00  34   6.4              81.66003
 ```

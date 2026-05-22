@@ -187,6 +187,7 @@ include:
 
 ``` r
 
+SEX
 AGE
 hba1c
 ```
