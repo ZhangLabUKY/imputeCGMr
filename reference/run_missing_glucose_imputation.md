@@ -84,18 +84,30 @@ run_missing_glucose_imputation(
 
 - models:
 
-  Retained for compatibility. The strict Python workflow auto-selects
-  between `MICE+ARIMA` and `MICE+XGBoost` from the missing-rate
-  threshold; RF, kNN, LightGBM, and MICE-only are not used.
+  Real-imputation method selector. Use `NULL` or `"auto"` to keep the
+  default missing-rate rule: `MICE+ARIMA` when the target missing rate
+  is less than or equal to `use_arima_if_missing_leq`, otherwise
+  `MICE+XGBoost`. Use one of `"arima"`, `"xgboost"`, `"rf"`, `"knn"`, or
+  `"lightgbm"` to force a specific method regardless of missing rate.
 
-- rf_n_estimators, knn_k, lgb_nrounds:
+- rf_n_estimators:
 
-  Retained for compatibility and ignored by the strict Python workflow.
+  Integer: number of Random Forest trees. Only used when
+  `models = "rf"`.
+
+- knn_k:
+
+  Integer: number of nearest neighbors. Only used when `models = "knn"`.
 
 - xgb_nrounds:
 
   Integer: number of XGBoost boosting rounds. Python's `n_estimators`
   default is 300.
+
+- lgb_nrounds:
+
+  Integer: number of LightGBM boosting rounds. Only used when
+  `models = "lightgbm"`.
 
 - arima_order:
 
@@ -227,10 +239,10 @@ out <- run_missing_glucose_imputation(
 #> Warning: Number of logged events: 37
 head(subset(out, is.na(LBORRES)))
 #>    USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value
-#> 10      11   0      NA 2020-01-16 00:45:00  34   6.4             135.28276
-#> 31      11   0      NA 2020-01-16 02:30:00  34   6.4              79.87691
-#> 32      11   0      NA 2020-01-16 02:35:00  34   6.4              78.47737
-#> 33      11   0      NA 2020-01-16 02:40:00  34   6.4              75.64531
-#> 34      11   0      NA 2020-01-16 02:45:00  34   6.4             115.65877
-#> 55      11   0      NA 2020-01-16 04:30:00  34   6.4              81.66003
+#> 10      11   0      NA 2020-01-16 00:45:00  34   6.4             136.07945
+#> 31      11   0      NA 2020-01-16 02:30:00  34   6.4              79.64849
+#> 32      11   0      NA 2020-01-16 02:35:00  34   6.4              77.91698
+#> 33      11   0      NA 2020-01-16 02:40:00  34   6.4              76.78439
+#> 34      11   0      NA 2020-01-16 02:45:00  34   6.4             114.86286
+#> 55      11   0      NA 2020-01-16 04:30:00  34   6.4              81.52077
 ```

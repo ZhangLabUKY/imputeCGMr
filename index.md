@@ -1,4 +1,4 @@
-# CGMissingDataR
+# CGMmissingDataR
 
 Install the released version from CRAN:
 
@@ -12,10 +12,10 @@ Or install the development version from GitHub:
 ``` r
 
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/CGMissingDataR")
+devtools::install_github("ZhangLabUKY/CGMmissingDataR")
 ```
 
-CGMissingDataR imputes missing glucose values in continuous glucose
+CGMmissingDataR imputes missing glucose values in continuous glucose
 monitoring (CGM) data. The main public workflow is:
 
 ``` r
@@ -32,7 +32,7 @@ original glucose column unchanged.
 
 ## What the imputation workflow does
 
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md)
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
 performs the following steps:
 
 1.  reads a data frame or CSV file;
@@ -44,10 +44,12 @@ performs the following steps:
 5.  encodes `SEX` when present;
 6.  creates internal time, lag, and rolling-mean glucose features;
 7.  imputes the target and feature matrix;
-8.  chooses the final model from the post-regularization target missing
-    rate:
+8.  chooses the final model from `models`:
+    - `models = NULL` or `models = "auto"` keeps the missing-rate rule,
     - `MICE+ARIMA` when missing rate is `<= 0.05`,
-    - `MICE+XGBoost` when missing rate is `> 0.05`;
+    - `MICE+XGBoost` when missing rate is `> 0.05`,
+    - or users can force `MICE+ARIMA`, `MICE+XGBoost`, `MICE+RF`,
+      `MICE+kNN`, or `MICE+LightGBM`;
 9.  returns a single completed data frame containing the original input
     columns plus `imputed_glucose_value`.
 
@@ -148,13 +150,18 @@ missing glucose values.
 
 ## Bundled Shiny app
 
-CGMissingDataR also includes a small Shiny app for users who prefer an
+CGMmissingDataR also includes a small Shiny app for users who prefer an
 interactive workflow. The app lets users upload a CSV file or load one
 of the built-in example data sets, choose the target glucose, subject
 ID, timestamp, and feature columns, run
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md),
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md),
 preview rows with missing glucose values that were imputed, and download
 the completed data as a CSV file.
+
+The app also exposes the same final-method selector as the R function.
+Users can keep the automatic missing-rate rule or force `MICE+ARIMA`,
+`MICE+XGBoost`, `MICE+RF`, `MICE+kNN`, or `MICE+LightGBM`;
+method-specific controls appear only when they apply.
 
 Launch the app from R with:
 
@@ -178,16 +185,16 @@ install.packages("shiny")
 
 For package developers, the app is stored under
 `inst/shiny/cgm_imputation_app/` and is launched through the exported
-[`run_app()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_app.md)
+[`run_app()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_app.md)
 helper.
 
 ## Optional Python-compatible backend
 
 Use `imputer_backend = "sklearn"` to run the strict Python-compatible
 path. In that path, `reticulate` sends the data to Python, where pandas,
-scikit-learn, statsmodels, and Python xgboost perform the preprocessing
-and calculations. The completed pandas data frame is then converted back
-to R.
+scikit-learn, statsmodels, Python xgboost, and optional Python lightgbm
+perform the preprocessing and calculations. The completed pandas data
+frame is then converted back to R.
 
 ``` r
 
@@ -210,14 +217,14 @@ The main vignette contains a detailed walkthrough of data requirements,
 timestamp regularization, return columns, backend selection, optional
 Python setup, and troubleshooting:
 
-<https://zhanglabuky.github.io/CGMissingDataR/articles/How-To-Use-CGMissingDataR.html>
+<https://zhanglabuky.github.io/CGMmissingDataR/articles/How-To-Use-CGMissingDataR.html>
 
 A separate Shiny app vignette walks through the interactive interface:
 
-<https://zhanglabuky.github.io/CGMissingDataR/articles/Using-the-CGMissingDataR-Shiny-App.html>
+<https://zhanglabuky.github.io/CGMmissingDataR/articles/Using-the-CGMissingDataR-Shiny-App.html>
 
 ## Changelog
 
 The changelog is available at:
 
-<https://zhanglabuky.github.io/CGMissingDataR/news/index.html>
+<https://zhanglabuky.github.io/CGMmissingDataR/news/index.html>

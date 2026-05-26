@@ -13,16 +13,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/ZhangLabUKY/CGMissingDataR/blob/master/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/ZhangLabUKY/CGMmissingDataR/blob/master/DESCRIPTION)
 
 Saraswat S, Hasin Shahed Shad, Zhang X (2026). *CGMissingDataR: Impute
 Missing Glucose Values in CGM Data*. R package version 0.0.2,
-<https://zhanglabuky.github.io/CGMissingDataR/>.
+<https://zhanglabuky.github.io/CGMmissingDataR/>.
 
     @Manual{,
       title = {CGMissingDataR: Impute Missing Glucose Values in CGM Data},
       author = {Shubh Saraswat and {Hasin Shahed Shad} and Xiaohua Douglas Zhang},
       year = {2026},
       note = {R package version 0.0.2},
-      url = {https://zhanglabuky.github.io/CGMissingDataR/},
+      url = {https://zhanglabuky.github.io/CGMmissingDataR/},
     }

@@ -1,8 +1,8 @@
-# How To Use CGMissingDataR
+# How To Use CGMmissingDataR
 
 ## Overview
 
-CGMissingDataR imputes missing glucose values in continuous glucose
+CGMmissingDataR imputes missing glucose values in continuous glucose
 monitoring (CGM) data. The main user-facing function is:
 
 ``` r
@@ -38,8 +38,8 @@ The core workflow is:
 4.  insert missing timestamp rows with `target_col = NA`;
 5.  create internal time, lag, and rolling-mean features;
 6.  impute the target and feature matrix;
-7.  choose `MICE+ARIMA` or `MICE+XGBoost` from the post-regularization
-    missing rate;
+7.  choose the final model from `models`, using the post-regularization
+    missing rate for the default automatic selection;
 8.  return the original columns plus `imputed_glucose_value`.
 
 ## Installation
@@ -56,7 +56,7 @@ Install the development version with:
 ``` r
 
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/CGMissingDataR")
+devtools::install_github("ZhangLabUKY/CGMmissingDataR")
 ```
 
 Load the package:
@@ -248,24 +248,29 @@ head(impute_out[missing_rows, c(
   "imputed_glucose_value"
 )])
 #>    USUBJID                Time LBORRES imputed_glucose_value
-#> 10      11 2020-01-16 00:45:00      NA              169.5005
+#> 10      11 2020-01-16 00:45:00      NA              169.4575
 #> 31      11 2020-01-16 02:30:00      NA              158.6228
 #> 32      11 2020-01-16 02:35:00      NA              160.8414
 #> 33      11 2020-01-16 02:40:00      NA              158.6228
-#> 34      11 2020-01-16 02:45:00      NA              167.9637
+#> 34      11 2020-01-16 02:45:00      NA              167.9458
 #> 55      11 2020-01-16 04:30:00      NA              158.6228
 ```
 
 ## How the method is selected
 
-The function automatically chooses the final imputation model from the
-target missing rate after timestamp-gap regularization:
+By default, the function automatically chooses the final imputation
+model from the target missing rate after timestamp-gap regularization:
 
 - if the missing rate is less than or equal to
   `use_arima_if_missing_leq`, the final method is `MICE+ARIMA`;
 - otherwise, the final method is `MICE+XGBoost`.
 
 The default threshold is `0.05`.
+
+Users can override this automatic rule by setting `models` to exactly
+one of `"arima"`, `"xgboost"`, `"rf"`, `"knn"`, or `"lightgbm"`. These
+options run MICE first, then use the selected model with the same
+internal time, lag, and rolling-mean features.
 
 Method labels and missingness-tracking columns are internal
 implementation details in the minimal user-facing output. The returned

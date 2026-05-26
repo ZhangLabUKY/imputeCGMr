@@ -33,7 +33,7 @@ target_col = NA, then imputed using the selected backend."></head><body>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ZhangLabUKY/CGMissingDataR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ZhangLabUKY/CGMmissingDataR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -49,7 +49,7 @@ target_col = NA, then imputed using the selected backend."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Impute missing glucose values using Mice and ARIMA/XGBoost</h1>
-      <small class="dont-index">Source: <a href="https://github.com/ZhangLabUKY/CGMissingDataR/blob/master/R/imputation.R" class="external-link"><code>R/imputation.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ZhangLabUKY/CGMmissingDataR/blob/master/R/imputation.R" class="external-link"><code>R/imputation.R</code></a></small>
       <div class="d-none name"><code>run_missing_glucose_imputation.Rd</code></div>
     </div>
 
@@ -138,19 +138,31 @@ used by the strict Python-engine path.</p></dd>
 
 
 <dt id="arg-models">models<a class="anchor" aria-label="anchor" href="#arg-models"></a></dt>
-<dd><p>Retained for compatibility. The strict Python workflow
-auto-selects between <code>MICE+ARIMA</code> and <code>MICE+XGBoost</code> from the missing-rate
-threshold; RF, kNN, LightGBM, and MICE-only are not used.</p></dd>
+<dd><p>Real-imputation method selector. Use <code>NULL</code> or <code>"auto"</code> to
+keep the default missing-rate rule: <code>MICE+ARIMA</code> when the target missing
+rate is less than or equal to <code>use_arima_if_missing_leq</code>, otherwise
+<code>MICE+XGBoost</code>. Use one of <code>"arima"</code>, <code>"xgboost"</code>, <code>"rf"</code>, <code>"knn"</code>, or
+<code>"lightgbm"</code> to force a specific method regardless of missing rate.</p></dd>
 
 
-<dt id="arg-rf-n-estimators-knn-k-lgb-nrounds">rf_n_estimators, knn_k, lgb_nrounds<a class="anchor" aria-label="anchor" href="#arg-rf-n-estimators-knn-k-lgb-nrounds"></a></dt>
-<dd><p>Retained for compatibility and
-ignored by the strict Python workflow.</p></dd>
+<dt id="arg-rf-n-estimators">rf_n_estimators<a class="anchor" aria-label="anchor" href="#arg-rf-n-estimators"></a></dt>
+<dd><p>Integer: number of Random Forest trees. Only used
+when <code>models = "rf"</code>.</p></dd>
+
+
+<dt id="arg-knn-k">knn_k<a class="anchor" aria-label="anchor" href="#arg-knn-k"></a></dt>
+<dd><p>Integer: number of nearest neighbors. Only used when
+<code>models = "knn"</code>.</p></dd>
 
 
 <dt id="arg-xgb-nrounds">xgb_nrounds<a class="anchor" aria-label="anchor" href="#arg-xgb-nrounds"></a></dt>
 <dd><p>Integer: number of XGBoost boosting rounds. Python's
 <code>n_estimators</code> default is 300.</p></dd>
+
+
+<dt id="arg-lgb-nrounds">lgb_nrounds<a class="anchor" aria-label="anchor" href="#arg-lgb-nrounds"></a></dt>
+<dd><p>Integer: number of LightGBM boosting rounds. Only used
+when <code>models = "lightgbm"</code>.</p></dd>
 
 
 <dt id="arg-arima-order">arima_order<a class="anchor" aria-label="anchor" href="#arg-arima-order"></a></dt>
@@ -277,12 +289,12 @@ study-period coverage gaps are reported but are not imputed.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Number of logged events: 37</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">out</span>, <span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">LBORRES</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10      11   0      NA 2020-01-16 00:45:00  34   6.4             135.28276</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31      11   0      NA 2020-01-16 02:30:00  34   6.4              79.87691</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32      11   0      NA 2020-01-16 02:35:00  34   6.4              78.47737</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33      11   0      NA 2020-01-16 02:40:00  34   6.4              75.64531</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34      11   0      NA 2020-01-16 02:45:00  34   6.4             115.65877</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 55      11   0      NA 2020-01-16 04:30:00  34   6.4              81.66003</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10      11   0      NA 2020-01-16 00:45:00  34   6.4             136.07945</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31      11   0      NA 2020-01-16 02:30:00  34   6.4              79.64849</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32      11   0      NA 2020-01-16 02:35:00  34   6.4              77.91698</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 33      11   0      NA 2020-01-16 02:40:00  34   6.4              76.78439</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 34      11   0      NA 2020-01-16 02:45:00  34   6.4             114.86286</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 55      11   0      NA 2020-01-16 04:30:00  34   6.4              81.52077</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

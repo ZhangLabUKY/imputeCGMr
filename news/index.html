@@ -23,7 +23,7 @@
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ZhangLabUKY/CGMissingDataR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ZhangLabUKY/CGMmissingDataR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -39,7 +39,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/ZhangLabUKY/CGMissingDataR/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/ZhangLabUKY/CGMmissingDataR/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
@@ -50,10 +50,12 @@
 <li><p>The returned data frame is now simpler. It contains the user’s original columns plus <code>imputed_glucose_value</code>. Internal columns used for timestamp regularization, lag features, rolling means, model fitting, and missingness tracking are no longer returned.</p></li>
 <li><p>The original glucose column is still preserved. Values that were originally missing, or created from timestamp gaps, remain <code>NA</code> in the original target column, while completed values are stored in <code>imputed_glucose_value</code>.</p></li>
 <li><p><code>imputed_glucose_value</code> is returned as a continuous numeric model estimate. Users who need whole-number glucose values for reporting can round this column after imputation.</p></li>
-<li><p>Added a bundled Shiny app for interactive missing glucose imputation. The app lets users upload a CSV file or load example data, choose the relevant columns, run imputation, preview results, and download the completed data.</p></li>
+<li><p><code><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation()</a></code> now supports selectable real-imputation methods through the existing <code>models</code> argument. The default <code>models = "auto"</code> keeps the missing-rate rule, using <code>MICE+ARIMA</code> when missingness is at or below the configured threshold and <code>MICE+XGBoost</code> otherwise.</p></li>
+<li><p>Users can now force one final real-imputation method with <code>models = "arima"</code>, <code>"xgboost"</code>, <code>"rf"</code>, <code>"knn"</code>, or <code>"lightgbm"</code>. Random Forest, kNN, and LightGBM use the same lag-feature workflow as the existing ARIMA and XGBoost real-imputation paths.</p></li>
+<li><p>Added a bundled Shiny app for interactive missing glucose imputation. The app lets users upload a CSV file or load example data, choose the relevant columns, select the final imputation method, run imputation, preview results, and download the completed data.</p></li>
 <li><p>Added built-in example data for demonstrating both explicit missing glucose values and timestamp-gap handling.</p></li>
-<li><p>The optional Python-compatible backend remains available with <code>imputer_backend = "sklearn"</code>. The default backend remains <code>imputer_backend = "mice"</code> for standard R usage.</p></li>
-<li><p>Updated README and vignettes to describe timestamp-gap handling, the simplified output structure, the bundled Shiny app, backend options, and post-imputation rounding.</p></li>
+<li><p>The optional Python-compatible backend remains available with <code>imputer_backend = "sklearn"</code>. The default backend remains <code>imputer_backend = "mice"</code> for standard R usage. Both backends support the selectable final imputation methods, with Python LightGBM available when the optional Python <code>lightgbm</code> module is installed.</p></li>
+<li><p>Updated README and vignettes to describe timestamp-gap handling, the simplified output structure, selectable final imputation methods, the bundled Shiny app, backend options, and post-imputation rounding.</p></li>
 </ul></div>
 </div>
     <div class="section level2">

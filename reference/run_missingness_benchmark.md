@@ -3,7 +3,7 @@
 **\[deprecated\]**
 
 This function is deprecated. Use
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md)
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
 for real missing glucose values.
 
 This function implements missingness benchmarking by masking the target

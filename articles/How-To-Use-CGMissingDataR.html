@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>How To Use CGMissingDataR • CGMissingDataR</title>
+<title>How To Use CGMmissingDataR • CGMissingDataR</title>
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="How To Use CGMissingDataR">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="How To Use CGMmissingDataR">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -42,7 +42,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ZhangLabUKY/CGMissingDataR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/ZhangLabUKY/CGMmissingDataR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
@@ -64,10 +64,10 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>How To Use CGMissingDataR</h1>
+      <h1>How To Use CGMmissingDataR</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ZhangLabUKY/CGMissingDataR/blob/master/vignettes/How-To-Use-CGMissingDataR.Rmd" class="external-link"><code>vignettes/How-To-Use-CGMissingDataR.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ZhangLabUKY/CGMmissingDataR/blob/master/vignettes/How-To-Use-CGMissingDataR.Rmd" class="external-link"><code>vignettes/How-To-Use-CGMissingDataR.Rmd</code></a></small>
       <div class="d-none name"><code>How-To-Use-CGMissingDataR.Rmd</code></div>
     </div>
 
@@ -76,7 +76,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>CGMissingDataR imputes missing glucose values in continuous glucose
+<p>CGMmissingDataR imputes missing glucose values in continuous glucose
 monitoring (CGM) data. The main user-facing function is:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -108,8 +108,9 @@ timestamp grid;</li>
 <code>target_col = NA</code>;</li>
 <li>create internal time, lag, and rolling-mean features;</li>
 <li>impute the target and feature matrix;</li>
-<li>choose <code>MICE+ARIMA</code> or <code>MICE+XGBoost</code> from the
-post-regularization missing rate;</li>
+<li>choose the final model from <code>models</code>, using the
+post-regularization missing rate for the default automatic
+selection;</li>
 <li>return the original columns plus
 <code>imputed_glucose_value</code>.</li>
 </ol>
@@ -123,10 +124,10 @@ post-regularization missing rate;</li>
 <p>Install the development version with:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ZhangLabUKY/CGMissingDataR"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"ZhangLabUKY/CGMmissingDataR"</span><span class="op">)</span></span></code></pre></div>
 <p>Load the package:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zhanglabuky.github.io/CGMissingDataR/">CGMissingDataR</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zhanglabuky.github.io/CGMmissingDataR/">CGMissingDataR</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>
@@ -393,18 +394,19 @@ present, rows inserted during timestamp regularization.</p>
 <span>  <span class="st">"imputed_glucose_value"</span></span>
 <span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    USUBJID                Time LBORRES imputed_glucose_value</span></span>
-<span><span class="co">#&gt; 10      11 2020-01-16 00:45:00      NA              169.5005</span></span>
+<span><span class="co">#&gt; 10      11 2020-01-16 00:45:00      NA              169.4575</span></span>
 <span><span class="co">#&gt; 31      11 2020-01-16 02:30:00      NA              158.6228</span></span>
 <span><span class="co">#&gt; 32      11 2020-01-16 02:35:00      NA              160.8414</span></span>
 <span><span class="co">#&gt; 33      11 2020-01-16 02:40:00      NA              158.6228</span></span>
-<span><span class="co">#&gt; 34      11 2020-01-16 02:45:00      NA              167.9637</span></span>
+<span><span class="co">#&gt; 34      11 2020-01-16 02:45:00      NA              167.9458</span></span>
 <span><span class="co">#&gt; 55      11 2020-01-16 04:30:00      NA              158.6228</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="how-the-method-is-selected">How the method is selected<a class="anchor" aria-label="anchor" href="#how-the-method-is-selected"></a>
 </h2>
-<p>The function automatically chooses the final imputation model from
-the target missing rate after timestamp-gap regularization:</p>
+<p>By default, the function automatically chooses the final imputation
+model from the target missing rate after timestamp-gap
+regularization:</p>
 <ul>
 <li>if the missing rate is less than or equal to
 <code>use_arima_if_missing_leq</code>, the final method is
@@ -412,6 +414,11 @@ the target missing rate after timestamp-gap regularization:</p>
 <li>otherwise, the final method is <code>MICE+XGBoost</code>.</li>
 </ul>
 <p>The default threshold is <code>0.05</code>.</p>
+<p>Users can override this automatic rule by setting <code>models</code>
+to exactly one of <code>"arima"</code>, <code>"xgboost"</code>,
+<code>"rf"</code>, <code>"knn"</code>, or <code>"lightgbm"</code>. These
+options run MICE first, then use the selected model with the same
+internal time, lag, and rolling-mean features.</p>
 <p>Method labels and missingness-tracking columns are internal
 implementation details in the minimal user-facing output. The returned
 data frame keeps only the original input columns plus

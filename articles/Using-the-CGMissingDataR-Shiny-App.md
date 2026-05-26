@@ -1,8 +1,8 @@
-# Using the CGMissingDataR Shiny App
+# Using the CGMmissingDataR Shiny App
 
 ## Overview
 
-CGMissingDataR includes an optional Shiny app for interactive missing
+CGMmissingDataR includes an optional Shiny app for interactive missing
 glucose imputation. The app is a point-and-click interface around the
 main package function:
 
@@ -24,7 +24,7 @@ The app is useful when users want to:
 
 The Shiny app does not implement a separate imputation algorithm. It
 calls
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md)
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
 internally and returns the same type of completed data frame as the
 command-line workflow.
 
@@ -36,7 +36,7 @@ rows than the uploaded data when timestamps are missing.
 
 ## Installation
 
-Install CGMissingDataR from CRAN with:
+Install CGMmissingDataR from CRAN with:
 
 ``` r
 
@@ -88,7 +88,7 @@ system.file(
 ```
 
 Users normally do not need to access this directory directly. The
-[`run_app()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_app.md)
+[`run_app()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_app.md)
 launcher finds it automatically.
 
 ## Input options
@@ -227,7 +227,7 @@ data when there are timestamp gaps.
 ## Backend selection
 
 The app supports the same backends as
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md).
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md).
 
 | Backend | Description | Recommended use |
 |----|----|----|
@@ -246,6 +246,26 @@ imputer_backend = "mice"
 This backend does not require Python and is the safest choice for most
 users. It is also the backend used in CRAN-safe examples and tests.
 
+## Method selection
+
+The **Final imputation method** control mirrors the `models` argument in
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md).
+The default **Automatic by missing rate** option uses `MICE+ARIMA` when
+missingness is at or below the selected threshold and `MICE+XGBoost`
+otherwise.
+
+Users can also force exactly one final method:
+
+- `MICE+ARIMA`;
+- `MICE+XGBoost`;
+- `MICE+Random Forest`;
+- `MICE+kNN`;
+- `MICE+LightGBM`.
+
+The app shows only the tuning controls relevant to the selected method.
+For example, Random Forest shows the tree count, kNN shows the neighbor
+count, and LightGBM shows boosting rounds.
+
 ### Optional sklearn backend
 
 The optional Python-compatible backend is:
@@ -261,7 +281,8 @@ then uses:
 - `pandas` for data-frame operations;
 - `scikit-learn` for `IterativeImputer`;
 - `statsmodels` for ARIMA;
-- Python `xgboost` for XGBoost regression.
+- Python `xgboost` for XGBoost regression;
+- Python `lightgbm` when forcing LightGBM.
 
 To use the Python backend, install `reticulate` and declare the Python
 requirements before launching or running the app:
@@ -277,6 +298,9 @@ reticulate::py_require(c(
   "statsmodels",
   "xgboost"
 ))
+
+# Optional, only needed for models = "lightgbm"
+reticulate::py_install("lightgbm", pip = TRUE)
 ```
 
 The Python backend is optional. It is not required for installing or
@@ -297,8 +321,12 @@ out <- run_missing_glucose_imputation(
   id_col = selected_id_col,
   time_col = selected_time_col,
   imputer_backend = selected_backend,
+  models = selected_method,
   use_arima_if_missing_leq = selected_threshold,
   xgb_nrounds = selected_xgb_rounds,
+  rf_n_estimators = selected_rf_trees,
+  knn_k = selected_knn_neighbors,
+  lgb_nrounds = selected_lightgbm_rounds,
   seed = selected_seed,
   export = FALSE
 )
@@ -404,6 +432,9 @@ reticulate::py_require(c(
   "statsmodels",
   "xgboost"
 ))
+
+# Optional, only needed for models = "lightgbm"
+reticulate::py_install("lightgbm", pip = TRUE)
 ```
 
 Then restart R and launch the app again.
