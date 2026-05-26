@@ -59,15 +59,23 @@ Python-engine path uses pandas timestamp parsing.}
 \item{time_unit}{Retained for compatibility with the old R function and not
 used by the strict Python-engine path.}
 
-\item{models}{Retained for compatibility. The strict Python workflow
-auto-selects between \code{MICE+ARIMA} and \code{MICE+XGBoost} from the missing-rate
-threshold; RF, kNN, LightGBM, and MICE-only are not used.}
+\item{models}{Real-imputation method selector. Use \code{NULL} or \code{"auto"} to
+keep the default missing-rate rule: \code{MICE+ARIMA} when the target missing
+rate is less than or equal to \code{use_arima_if_missing_leq}, otherwise
+\code{MICE+XGBoost}. Use one of \code{"arima"}, \code{"xgboost"}, \code{"rf"}, \code{"knn"}, or
+\code{"lightgbm"} to force a specific method regardless of missing rate.}
 
-\item{rf_n_estimators, knn_k, lgb_nrounds}{Retained for compatibility and
-ignored by the strict Python workflow.}
+\item{rf_n_estimators}{Integer: number of Random Forest trees. Only used
+when \code{models = "rf"}.}
+
+\item{knn_k}{Integer: number of nearest neighbors. Only used when
+\code{models = "knn"}.}
 
 \item{xgb_nrounds}{Integer: number of XGBoost boosting rounds. Python's
 \code{n_estimators} default is 300.}
+
+\item{lgb_nrounds}{Integer: number of LightGBM boosting rounds. Only used
+when \code{models = "lightgbm"}.}
 
 \item{arima_order}{Integer vector of length 3. Python default is
 \code{c(4L, 1L, 0L)}.}

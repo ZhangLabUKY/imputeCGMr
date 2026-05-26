@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_app.R
 \name{run_app}
 \alias{run_app}
-\title{Launch the CGMissingDataR Shiny App}
+\title{Launch the CGMmissingDataR Shiny App}
 \usage{
 run_app()
 }
@@ -17,7 +17,7 @@ downloading the completed data as a CSV file.
 }
 \examples{
 \dontrun{
-# Run the CGMissingDataR Shiny app
+# Run the CGMmissingDataR Shiny app
 run_app()
 }
 

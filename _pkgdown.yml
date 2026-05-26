@@ -1,16 +1,16 @@
-url: https://zhanglabuky.github.io/CGMissingDataR/
+url: https://zhanglabuky.github.io/CGMmissingDataR/
 template:
   bootstrap: 5
   light-switch: yes
 home:
-  title: Welcome to CGMissingDataR
+  title: Welcome to CGMmissingDataR
   tagline: An R package for handling missing data in continuous glucose monitoring
     (CGM) datasets.
   links:
   - text: Read more
     href: articles/How-To-Use-CGMissingDataR.html
 navbar:
-  title: CGMissingDataR
+  title: CGMmissingDataR
   left:
   - text: Reference
     href: reference/index.html
@@ -21,7 +21,7 @@ navbar:
     - text: Changelog
       href: news/index.html
 articles:
-- title: How To Use CGMissingDataR
+- title: How To Use CGMmissingDataR
   contents: How-To-Use-CGMissingDataR
 - title: Using the Shiny App
   contents: Using-the-CGMissingDataR-Shiny-App

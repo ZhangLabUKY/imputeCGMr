@@ -581,11 +581,17 @@ run_comprehensive_imputation_benchmark <- function(
 #'   Python-engine path uses pandas timestamp parsing.
 #' @param time_unit Retained for compatibility with the old R function and not
 #'   used by the strict Python-engine path.
-#' @param models Retained for compatibility. The strict Python workflow
-#'   auto-selects between `MICE+ARIMA` and `MICE+XGBoost` from the missing-rate
-#'   threshold; RF, kNN, LightGBM, and MICE-only are not used.
-#' @param rf_n_estimators,knn_k,lgb_nrounds Retained for compatibility and
-#'   ignored by the strict Python workflow.
+#' @param models Real-imputation method selector. Use `NULL` or `"auto"` to
+#'   keep the default missing-rate rule: `MICE+ARIMA` when the target missing
+#'   rate is less than or equal to `use_arima_if_missing_leq`, otherwise
+#'   `MICE+XGBoost`. Use one of `"arima"`, `"xgboost"`, `"rf"`, `"knn"`, or
+#'   `"lightgbm"` to force a specific method regardless of missing rate.
+#' @param rf_n_estimators Integer: number of Random Forest trees. Only used
+#'   when `models = "rf"`.
+#' @param knn_k Integer: number of nearest neighbors. Only used when
+#'   `models = "knn"`.
+#' @param lgb_nrounds Integer: number of LightGBM boosting rounds. Only used
+#'   when `models = "lightgbm"`.
 #' @param xgb_nrounds Integer: number of XGBoost boosting rounds. Python's
 #'   `n_estimators` default is 300.
 #' @param arima_order Integer vector of length 3. Python default is
@@ -721,6 +727,7 @@ run_missing_glucose_imputation <- function(
   }
   arima_order <- as.integer(arima_order)
   lag_k <- as.integer(lag_k)
+  real_imputation_model <- .cgmd_normalize_real_imputation_model(models)
 
   if (!is.null(feature_cols)) {
     if (is.factor(feature_cols)) {
@@ -732,18 +739,6 @@ run_missing_glucose_imputation <- function(
   }
 
   ignored <- character(0)
-  if (!identical(models, "auto")) {
-    ignored <- c(ignored, "models")
-  }
-  if (!identical(rf_n_estimators, 200)) {
-    ignored <- c(ignored, "rf_n_estimators")
-  }
-  if (!identical(knn_k, 7)) {
-    ignored <- c(ignored, "knn_k")
-  }
-  if (!identical(lgb_nrounds, 400)) {
-    ignored <- c(ignored, "lgb_nrounds")
-  }
   if (!identical(time_format, "yyyy:mm:dd:hh:nn")) {
     ignored <- c(ignored, "time_format")
   }
@@ -754,7 +749,7 @@ run_missing_glucose_imputation <- function(
     warning(
       "Strict Python-port mode ignores these old R-only controls: ",
       paste(unique(ignored), collapse = ", "),
-      ". The Python package auto-selects ARIMA/XGBoost and does not run RF, kNN, LightGBM, or MICE-only.",
+      ".",
       call. = FALSE
     )
   }
@@ -807,6 +802,10 @@ run_missing_glucose_imputation <- function(
       arima_order = arima_order,
       arima_min_history = arima_min_history,
       xgb_nrounds = xgb_nrounds,
+      rf_n_estimators = rf_n_estimators,
+      knn_k = knn_k,
+      lgb_nrounds = lgb_nrounds,
+      models = real_imputation_model,
       drop_internal_cols = TRUE
     )
     result <- .cgmd_py_keep_user_output_cols(
@@ -889,7 +888,11 @@ run_missing_glucose_imputation <- function(
     imputer_backend = "mice",
     arima_order = arima_order,
     arima_min_history = arima_min_history,
-    xgb_nrounds = xgb_nrounds
+    xgb_nrounds = xgb_nrounds,
+    rf_n_estimators = rf_n_estimators,
+    knn_k = knn_k,
+    lgb_nrounds = lgb_nrounds,
+    models = real_imputation_model
   )
   result <- .cgmd_py_keep_user_output_cols(
     df = result,
@@ -973,6 +976,9 @@ run_missing_glucose_imputation <- function(
       "import pandas as pd",
       "from sklearn.experimental import enable_iterative_imputer  # noqa: F401",
       "from sklearn.impute import IterativeImputer",
+      "from sklearn.ensemble import RandomForestRegressor",
+      "from sklearn.neighbors import KNeighborsRegressor",
+      "from sklearn.preprocessing import StandardScaler",
       "from statsmodels.tsa.arima.model import ARIMA",
       "import xgboost as xgb",
       "import re",
@@ -1092,13 +1098,73 @@ run_missing_glucose_imputation <- function(
       "    model.fit(X_train, y_train, verbose=False)",
       "    return model.predict(X_missing)",
       "",
+      "def _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=42, n_estimators=200):",
+      "    if X_missing.shape[0] == 0:",
+      "        return np.asarray([], dtype=float)",
+      "    model = RandomForestRegressor(",
+      "        n_estimators=int(n_estimators),",
+      "        max_features=1.0,",
+      "        min_samples_leaf=1,",
+      "        bootstrap=True,",
+      "        random_state=int(seed),",
+      "        n_jobs=1,",
+      "    )",
+      "    model.fit(X_train, y_train)",
+      "    return model.predict(X_missing)",
+      "",
+      "def _cgmd_fit_knn_predict_missing(X_train, y_train, X_missing, k=7):",
+      "    if X_missing.shape[0] == 0:",
+      "        return np.asarray([], dtype=float)",
+      "    scaler = StandardScaler()",
+      "    X_train_sc = scaler.fit_transform(X_train)",
+      "    X_missing_sc = scaler.transform(X_missing)",
+      "    n_neighbors = max(1, min(int(k), X_train.shape[0]))",
+      "    model = KNeighborsRegressor(n_neighbors=n_neighbors)",
+      "    model.fit(X_train_sc, y_train)",
+      "    return model.predict(X_missing_sc)",
+      "",
+      "def _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=42, nrounds=400):",
+      "    if X_missing.shape[0] == 0:",
+      "        return np.asarray([], dtype=float)",
+      "    try:",
+      "        import lightgbm as lgb",
+      "    except Exception as exc:",
+      "        raise ImportError(\"models='lightgbm' with imputer_backend='sklearn' requires the Python module lightgbm. Install it with reticulate::py_install('lightgbm', pip = TRUE), then restart R.\") from exc",
+      "    model = lgb.LGBMRegressor(",
+      "        objective='regression',",
+      "        n_estimators=int(nrounds),",
+      "        learning_rate=0.05,",
+      "        num_leaves=31,",
+      "        subsample=0.8,",
+      "        colsample_bytree=0.8,",
+      "        random_state=int(seed),",
+      "        verbosity=-1,",
+      "    )",
+      "    model.fit(X_train, y_train)",
+      "    return model.predict(X_missing)",
+      "",
+      "def _cgmd_resolve_model(models, miss_rate, use_arima_if_missing_leq):",
+      "    key = 'auto' if models is None else str(models).strip().lower()",
+      "    if key == 'auto':",
+      "        key = 'arima' if miss_rate <= float(use_arima_if_missing_leq) else 'xgboost'",
+      "    labels = {",
+      "        'arima': 'MICE+ARIMA',",
+      "        'xgboost': 'MICE+XGBoost',",
+      "        'rf': 'MICE+RF',",
+      "        'knn': 'MICE+kNN',",
+      "        'lightgbm': 'MICE+LightGBM',",
+      "    }",
+      "    if key not in labels:",
+      "        raise ValueError(f\"Invalid models value for real imputation: {models}\")",
+      "    return key, labels[key]",
+      "",
       "def _cgmd_drop_internal_cols(df):",
       "    drop_cols = [c for c in df.columns if re.match(r'^lag[0-9]+$', str(c))]",
       "    if 'rollmean' in df.columns:",
       "        drop_cols.append('rollmean')",
       "    return df.drop(columns=list(dict.fromkeys(drop_cols)), errors='ignore')",
       "",
-      "def cgmd_r_run_python_engine(r_df, timestamp_col='timestamp', subjectid_col='subjectid', glucose_col='glucose_value', feature_cols=None, interval_minutes=5, use_arima_if_missing_leq=0.05, seed=42, lag_k=(1,2,3), roll_window=3, add_rollmean=True, arima_order=(4,1,0), arima_min_history=20, xgb_nrounds=300, drop_internal_cols=True):",
+      "def cgmd_r_run_python_engine(r_df, timestamp_col='timestamp', subjectid_col='subjectid', glucose_col='glucose_value', feature_cols=None, interval_minutes=5, use_arima_if_missing_leq=0.05, seed=42, lag_k=(1,2,3), roll_window=3, add_rollmean=True, arima_order=(4,1,0), arima_min_history=20, xgb_nrounds=300, rf_n_estimators=200, knn_k=7, lgb_nrounds=400, models='auto', drop_internal_cols=True):",
       "    out = pd.DataFrame(r_df).copy()",
       "    out = _cgmd_add_timeseries_column(out, ts_col=timestamp_col, id_col=subjectid_col, interval_minutes=interval_minutes)",
       "    out = _cgmd_encode_sex(out, 'SEX')",
@@ -1123,17 +1189,29 @@ run_missing_glucose_imputation <- function(
       "    y_mice_full = imp_mat[:, 0]",
       "    X_imp = imp_mat[:, 1:]",
       "    y_final = np.asarray(y_mice_full, dtype=float).copy()",
-      "    if miss_rate <= float(use_arima_if_missing_leq):",
+      "    model_key, method = _cgmd_resolve_model(models, miss_rate, use_arima_if_missing_leq)",
+      "    if model_key == 'arima':",
       "        y_final = _cgmd_arima_segmentwise_on_mice(out, subjectid_col, y_mice_full, mask_pos, order=tuple(int(x) for x in arima_order), min_history=int(arima_min_history))",
-      "        method = 'MICE+ARIMA'",
       "    else:",
       "        train_idx = ~mask_pos",
       "        X_train = X_imp[train_idx]",
       "        y_train = out.loc[train_idx, glucose_col].to_numpy(dtype=float)",
       "        X_missing = X_imp[mask_pos]",
-      "        y_pred_missing = _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=seed, nrounds=xgb_nrounds)",
+      "        if X_missing.shape[0] == 0:",
+      "            y_pred_missing = np.asarray([], dtype=float)",
+      "        elif X_train.shape[1] == 0:",
+      "            raise ValueError(f\"{method} requires at least one feature column.\")",
+      "        elif model_key == 'xgboost':",
+      "            y_pred_missing = _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=seed, nrounds=xgb_nrounds)",
+      "        elif model_key == 'rf':",
+      "            y_pred_missing = _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=seed, n_estimators=rf_n_estimators)",
+      "        elif model_key == 'knn':",
+      "            y_pred_missing = _cgmd_fit_knn_predict_missing(X_train, y_train, X_missing, k=knn_k)",
+      "        elif model_key == 'lightgbm':",
+      "            y_pred_missing = _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=seed, nrounds=lgb_nrounds)",
+      "        else:",
+      "            raise ValueError(f\"Unsupported real-imputation model: {model_key}\")",
       "        y_final[mask_pos] = y_pred_missing",
-      "        method = 'MICE+XGBoost'",
       "    out['imputed_glucose_value'] = y_final",
       "    out['imputation_method'] = method",
       "    out['missing_rate'] = miss_rate",
@@ -1163,6 +1241,10 @@ run_missing_glucose_imputation <- function(
   arima_order = c(4L, 1L, 0L),
   arima_min_history = 20L,
   xgb_nrounds = 300L,
+  rf_n_estimators = 200L,
+  knn_k = 7L,
+  lgb_nrounds = 400L,
+  models = "auto",
   drop_internal_cols = TRUE
 ) {
   .cgmd_py_define_python_engine()
@@ -1185,6 +1267,10 @@ run_missing_glucose_imputation <- function(
     arima_order = as.list(as.integer(arima_order)),
     arima_min_history = as.integer(arima_min_history),
     xgb_nrounds = as.integer(xgb_nrounds),
+    rf_n_estimators = as.integer(rf_n_estimators),
+    knn_k = as.integer(knn_k),
+    lgb_nrounds = as.integer(lgb_nrounds),
+    models = models,
     drop_internal_cols = isTRUE(drop_internal_cols)
   )
 
@@ -1726,7 +1812,11 @@ run_missing_glucose_imputation <- function(
   imputer_backend = c("mice"),
   arima_order = c(4L, 1L, 0L),
   arima_min_history = 20L,
-  xgb_nrounds = 300L
+  xgb_nrounds = 300L,
+  rf_n_estimators = 200L,
+  knn_k = 7L,
+  lgb_nrounds = 400L,
+  models = "auto"
 ) {
   imputer_backend <- match.arg(imputer_backend)
   out <- .cgmd_py_sort_reset(df, c(id_col, time_col))
@@ -1780,8 +1870,15 @@ run_missing_glucose_imputation <- function(
   y_mice_full <- as.numeric(imp_mat[, 1L])
   X_imp <- imp_mat[, -1L, drop = FALSE]
   y_final <- y_mice_full
+  model_info <- .cgmd_resolve_real_imputation_model(
+    models = models,
+    missing_rate = miss_rate,
+    use_arima_if_missing_leq = use_arima_if_missing_leq
+  )
+  model_key <- model_info$key
+  method <- model_info$label
 
-  if (miss_rate <= use_arima_if_missing_leq) {
+  if (identical(model_key, "arima")) {
     y_final <- .cgmd_py_arima_segmentwise_on_mice(
       df_sorted = out,
       id_col = id_col,
@@ -1790,34 +1887,57 @@ run_missing_glucose_imputation <- function(
       order = arima_order,
       min_history = arima_min_history
     )
-    method <- "MICE+ARIMA"
   } else {
-    if (!requireNamespace("xgboost", quietly = TRUE)) {
-      stop(
-        "Package 'xgboost' is required for the MICE+XGBoost branch.",
-        call. = FALSE
-      )
-    }
     train_idx <- !mask_pos
     if (!any(train_idx)) {
       stop(
-        "No observed target values are available for XGBoost training.",
+        "No observed target values are available for model training.",
         call. = FALSE
       )
     }
     X_train <- X_imp[train_idx, , drop = FALSE]
     y_train <- as.numeric(out[[target_col]][train_idx])
     X_missing <- X_imp[mask_pos, , drop = FALSE]
+    filled <- .cgmd_fill_missing_with_train_medians(
+      train_mat = X_train,
+      test_mat = X_missing,
+      cols = colnames(X_train)
+    )
+    X_train <- filled$train
+    X_missing <- filled$test
 
-    y_pred_missing <- .cgmd_py_fit_xgb_predict_missing(
-      X_train = X_train,
-      y_train = y_train,
-      X_missing = X_missing,
-      seed = seed,
-      nrounds = xgb_nrounds
+    y_pred_missing <- switch(
+      model_key,
+      xgboost = .cgmd_py_fit_xgb_predict_missing(
+        X_train = X_train,
+        y_train = y_train,
+        X_missing = X_missing,
+        seed = seed,
+        nrounds = xgb_nrounds
+      ),
+      rf = .cgmd_py_fit_rf_predict_missing(
+        X_train = X_train,
+        y_train = y_train,
+        X_missing = X_missing,
+        seed = seed,
+        n_estimators = rf_n_estimators
+      ),
+      knn = .cgmd_py_fit_knn_predict_missing(
+        X_train = X_train,
+        y_train = y_train,
+        X_missing = X_missing,
+        k = knn_k
+      ),
+      lightgbm = .cgmd_py_fit_lgb_predict_missing(
+        X_train = X_train,
+        y_train = y_train,
+        X_missing = X_missing,
+        seed = seed,
+        nrounds = lgb_nrounds
+      ),
+      stop("Unsupported real-imputation model: ", model_key, call. = FALSE)
     )
     y_final[mask_pos] <- y_pred_missing
-    method <- "MICE+XGBoost"
   }
 
   out[["imputed_glucose_value"]] <- as.numeric(y_final)
@@ -2200,6 +2320,199 @@ run_missing_glucose_imputation <- function(
     verbose = 0
   )
   as.numeric(stats::predict(model, xgboost::xgb.DMatrix(data = X_missing)))
+}
+
+.cgmd_py_fit_rf_predict_missing <- function(
+  X_train,
+  y_train,
+  X_missing,
+  seed = 42L,
+  n_estimators = 200L
+) {
+  if (nrow(X_missing) == 0L) {
+    return(numeric(0))
+  }
+  if (!requireNamespace("ranger", quietly = TRUE)) {
+    stop(
+      "Package 'ranger' is required when models = 'rf'.",
+      call. = FALSE
+    )
+  }
+  if (ncol(X_train) == 0L) {
+    stop("MICE+RF requires at least one feature column.", call. = FALSE)
+  }
+
+  .cgmd_assert_all_finite_matrix(X_train, "X_train")
+  .cgmd_assert_all_finite_matrix(X_missing, "X_missing")
+
+  set.seed(seed)
+  rf_model <- ranger::ranger(
+    x = X_train,
+    y = y_train,
+    num.trees = as.integer(n_estimators),
+    mtry = ncol(X_train),
+    min.node.size = 1L,
+    replace = TRUE,
+    sample.fraction = 1.0,
+    seed = as.integer(seed),
+    num.threads = 1L
+  )
+  as.numeric(stats::predict(rf_model, data = X_missing)$predictions)
+}
+
+.cgmd_py_fit_knn_predict_missing <- function(
+  X_train,
+  y_train,
+  X_missing,
+  k = 7L
+) {
+  if (nrow(X_missing) == 0L) {
+    return(numeric(0))
+  }
+  if (!requireNamespace("FNN", quietly = TRUE)) {
+    stop(
+      "Package 'FNN' is required when models = 'knn'.",
+      call. = FALSE
+    )
+  }
+  if (ncol(X_train) == 0L) {
+    stop("MICE+kNN requires at least one feature column.", call. = FALSE)
+  }
+
+  .cgmd_assert_all_finite_matrix(X_train, "X_train")
+  .cgmd_assert_all_finite_matrix(X_missing, "X_missing")
+
+  scaler <- .cgmd_fit_scaler(X_train)
+  X_train_sc <- .cgmd_transform_scaler(X_train, scaler)
+  X_missing_sc <- .cgmd_transform_scaler(X_missing, scaler)
+  .cgmd_assert_all_finite_matrix(X_train_sc, "X_train_sc")
+  .cgmd_assert_all_finite_matrix(X_missing_sc, "X_missing_sc")
+
+  k <- max(1L, min(as.integer(k), nrow(X_train_sc)))
+  as.numeric(FNN::knn.reg(
+    train = X_train_sc,
+    test = X_missing_sc,
+    y = y_train,
+    k = k
+  )$pred)
+}
+
+.cgmd_py_fit_lgb_predict_missing <- function(
+  X_train,
+  y_train,
+  X_missing,
+  seed = 42L,
+  nrounds = 400L
+) {
+  if (nrow(X_missing) == 0L) {
+    return(numeric(0))
+  }
+  if (!requireNamespace("lightgbm", quietly = TRUE)) {
+    stop(
+      "Package 'lightgbm' is required when models = 'lightgbm'.",
+      call. = FALSE
+    )
+  }
+  if (ncol(X_train) == 0L) {
+    stop("MICE+LightGBM requires at least one feature column.", call. = FALSE)
+  }
+
+  .cgmd_assert_all_finite_matrix(X_train, "X_train")
+  .cgmd_assert_all_finite_matrix(X_missing, "X_missing")
+
+  set.seed(seed)
+  lgb_train <- lightgbm::lgb.Dataset(data = X_train, label = y_train)
+  lgb_model <- lightgbm::lgb.train(
+    params = list(
+      objective = "regression",
+      learning_rate = 0.05,
+      num_leaves = 31L,
+      bagging_fraction = 0.8,
+      feature_fraction = 0.8,
+      seed = as.integer(seed),
+      verbose = -1L
+    ),
+    data = lgb_train,
+    nrounds = as.integer(nrounds)
+  )
+  as.numeric(stats::predict(lgb_model, X_missing))
+}
+
+.cgmd_real_imputation_model_keys <- function() {
+  c("arima", "xgboost", "rf", "knn", "lightgbm")
+}
+
+.cgmd_normalize_real_imputation_model <- function(models) {
+  if (is.null(models)) {
+    return("auto")
+  }
+  if (is.factor(models)) {
+    models <- as.character(models)
+  }
+  if (!is.character(models) || length(models) != 1L) {
+    stop(
+      "models must be NULL, 'auto', or exactly one of: ",
+      paste(.cgmd_real_imputation_model_keys(), collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  model <- tolower(trimws(models))
+  if (is.na(model) || identical(model, "")) {
+    stop("models cannot be NA or empty.", call. = FALSE)
+  }
+  if (identical(model, "auto")) {
+    return(model)
+  }
+  if (model %in% c("all", "mice_only")) {
+    stop(
+      "models = '",
+      model,
+      "' is not supported by run_missing_glucose_imputation() because it returns one imputed column. ",
+      "Use one of: auto, ",
+      paste(.cgmd_real_imputation_model_keys(), collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  if (!model %in% .cgmd_real_imputation_model_keys()) {
+    stop(
+      "Invalid models value: '",
+      model,
+      "'. Use NULL, 'auto', or exactly one of: ",
+      paste(.cgmd_real_imputation_model_keys(), collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  model
+}
+
+.cgmd_resolve_real_imputation_model <- function(
+  models,
+  missing_rate,
+  use_arima_if_missing_leq = 0.05
+) {
+  model <- .cgmd_normalize_real_imputation_model(models)
+  if (identical(model, "auto")) {
+    model <- if (missing_rate <= use_arima_if_missing_leq) {
+      "arima"
+    } else {
+      "xgboost"
+    }
+  }
+
+  labels <- c(
+    arima = "MICE+ARIMA",
+    xgboost = "MICE+XGBoost",
+    rf = "MICE+RF",
+    knn = "MICE+kNN",
+    lightgbm = "MICE+LightGBM"
+  )
+
+  list(key = model, label = unname(labels[[model]]))
 }
 
 .cgmd_model_keys <- function() {

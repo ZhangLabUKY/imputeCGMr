@@ -1,4 +1,4 @@
-#' Launch the CGMissingDataR Shiny App
+#' Launch the CGMmissingDataR Shiny App
 #'
 #' @description
 #' Launches a Shiny app for uploading a CGM data file, selecting the target,
@@ -10,7 +10,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Run the CGMissingDataR Shiny app
+#' # Run the CGMmissingDataR Shiny app
 #' run_app()
 #' }
 #'

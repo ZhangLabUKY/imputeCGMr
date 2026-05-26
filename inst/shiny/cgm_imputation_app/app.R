@@ -2,8 +2,54 @@ library(shiny)
 
 options(shiny.maxRequestSize = 1024^3)
 
+.imputation_method_choices <- c(
+  "Automatic by missing rate" = "auto",
+  "MICE + ARIMA" = "arima",
+  "MICE + XGBoost" = "xgboost",
+  "MICE + Random Forest" = "rf",
+  "MICE + kNN" = "knn",
+  "MICE + LightGBM" = "lightgbm"
+)
+
+.cgmd_shiny_imputation_args <- function(
+  data,
+  target_col,
+  feature_cols,
+  id_col,
+  time_col,
+  imputer_backend,
+  models,
+  use_arima_if_missing_leq,
+  xgb_nrounds,
+  rf_n_estimators,
+  knn_k,
+  lgb_nrounds,
+  seed,
+  prefer_cgmanalyzer_equal_interval
+) {
+  list(
+    data = data,
+    target_col = target_col,
+    feature_cols = feature_cols,
+    id_col = id_col,
+    time_col = time_col,
+    imputer_backend = imputer_backend,
+    models = models,
+    use_arima_if_missing_leq = use_arima_if_missing_leq,
+    xgb_nrounds = xgb_nrounds,
+    rf_n_estimators = rf_n_estimators,
+    knn_k = knn_k,
+    lgb_nrounds = lgb_nrounds,
+    seed = seed,
+    prefer_cgmanalyzer_equal_interval = isTRUE(
+      prefer_cgmanalyzer_equal_interval
+    ),
+    export = FALSE
+  )
+}
+
 ui <- fluidPage(
-  titlePanel("CGMissingDataR: Missing Glucose Imputation"),
+  titlePanel("CGMmissingDataR: Missing Glucose Imputation"),
 
   sidebarLayout(
     sidebarPanel(
@@ -48,21 +94,67 @@ ui <- fluidPage(
         selected = "mice"
       ),
 
-      numericInput(
+      selectInput(
+        inputId = "models",
+        label = "Final imputation method",
+        choices = .imputation_method_choices,
+        selected = "auto"
+      ),
+
+      conditionalPanel(
+        condition = "input.models == 'auto'",
+        numericInput(
         inputId = "use_arima_if_missing_leq",
-        label = "Use ARIMA if missing rate is ≤",
+        label = "Use ARIMA if missing rate is <=",
         value = 0.05,
         min = 0,
         max = 1,
         step = 0.01
       ),
+      ),
 
-      numericInput(
+      conditionalPanel(
+        condition = "input.models == 'auto' || input.models == 'xgboost'",
+        numericInput(
         inputId = "xgb_nrounds",
         label = "XGBoost boosting rounds",
         value = 300,
         min = 1,
         step = 1
+      ),
+      ),
+
+      conditionalPanel(
+        condition = "input.models == 'rf'",
+        numericInput(
+          inputId = "rf_n_estimators",
+          label = "Random Forest trees",
+          value = 200,
+          min = 1,
+          step = 1
+        )
+      ),
+
+      conditionalPanel(
+        condition = "input.models == 'knn'",
+        numericInput(
+          inputId = "knn_k",
+          label = "kNN neighbors",
+          value = 7,
+          min = 1,
+          step = 1
+        )
+      ),
+
+      conditionalPanel(
+        condition = "input.models == 'lightgbm'",
+        numericInput(
+          inputId = "lgb_nrounds",
+          label = "LightGBM boosting rounds",
+          value = 400,
+          min = 1,
+          step = 1
+        )
       ),
 
       numericInput(
@@ -370,21 +462,25 @@ server <- function(input, output, session) {
             feature_cols <- NULL
           }
 
-          out <- run_missing_glucose_imputation(
+          call_args <- .cgmd_shiny_imputation_args(
             data = dat,
             target_col = input$target_col,
             feature_cols = feature_cols,
             id_col = input$id_col,
             time_col = input$time_col,
             imputer_backend = input$imputer_backend,
+            models = input$models,
             use_arima_if_missing_leq = input$use_arima_if_missing_leq,
             xgb_nrounds = input$xgb_nrounds,
+            rf_n_estimators = input$rf_n_estimators,
+            knn_k = input$knn_k,
+            lgb_nrounds = input$lgb_nrounds,
             seed = input$seed,
             prefer_cgmanalyzer_equal_interval = isTRUE(
               input$prefer_cgmanalyzer_equal_interval
-            ),
-            export = FALSE
+            )
           )
+          out <- do.call(run_missing_glucose_imputation, call_args)
 
           incProgress(0.4)
           out

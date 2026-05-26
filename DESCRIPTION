@@ -33,7 +33,7 @@ Suggests:
 Config/testthat/edition: 3
 NeedsCompilation: no
 Language: en-US
-URL: https://zhanglabuky.github.io/CGMissingDataR/, https://github.com/ZhangLabUKY/CGMissingDataR
-BugReports: https://github.com/ZhangLabUKY/CGMissingDataR/issues
+URL: https://zhanglabuky.github.io/CGMmissingDataR/, https://github.com/ZhangLabUKY/CGMmissingDataR
+BugReports: https://github.com/ZhangLabUKY/CGMmissingDataR/issues
 LazyData: true
 VignetteBuilder: knitr
