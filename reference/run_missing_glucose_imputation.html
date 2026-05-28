@@ -80,6 +80,7 @@ imputation method.</p>
 <span>  knn_k <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>  xgb_nrounds <span class="op">=</span> <span class="fl">300</span>,</span>
 <span>  lgb_nrounds <span class="op">=</span> <span class="fl">400</span>,</span>
+<span>  n_threads <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  arima_order <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4L</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
 <span>  lag_k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span>, <span class="fl">3L</span><span class="op">)</span>,</span>
@@ -167,6 +168,13 @@ missing-rate rule selects XGBoost.</p></dd>
 <dt id="arg-lgb-nrounds">lgb_nrounds<a class="anchor" aria-label="anchor" href="#arg-lgb-nrounds"></a></dt>
 <dd><p>Integer number of LightGBM boosting rounds. Used when
 <code>models = "lightgbm"</code>.</p></dd>
+
+
+<dt id="arg-n-threads">n_threads<a class="anchor" aria-label="anchor" href="#arg-n-threads"></a></dt>
+<dd><p>Integer number of model-fitting threads for engines that
+support thread controls. The default <code>1L</code> is conservative for CRAN and
+shared systems. Increase for faster local XGBoost, Random Forest, and
+LightGBM runs. ARIMA and kNN do not use this setting.</p></dd>
 
 
 <dt id="arg-arima-order">arima_order<a class="anchor" aria-label="anchor" href="#arg-arima-order"></a></dt>

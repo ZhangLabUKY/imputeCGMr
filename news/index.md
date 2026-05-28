@@ -35,6 +35,10 @@
   Random Forest, kNN, and LightGBM use the same lag-feature workflow as
   the existing ARIMA and XGBoost real-imputation paths.
 
+- Real-imputation model engines now use `n_threads = 1` by default for
+  CRAN-friendly and shared-system-friendly CPU use. Users can increase
+  `n_threads` for faster local XGBoost, Random Forest, or LightGBM runs.
+
 - Added a bundled Shiny app for interactive missing glucose imputation.
   The app lets users upload a CSV file or load example data, choose the
   relevant columns, select the final imputation method, run imputation,

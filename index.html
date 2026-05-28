@@ -104,6 +104,7 @@
 <p>Internal columns such as <code>TimeSeries</code>, <code>TimeDifferenceMinutes</code>, lag features, rolling means, imputation method labels, and missingness-tracking flags are used for modeling but are not returned.</p>
 <p>Because timestamp gaps are converted into explicit rows before imputation, the returned data frame may contain more rows than the input data when readings are absent from the expected CGM sampling grid.</p>
 <p>The default R-native backend uses the R package <code>mice</code>. For closest agreement with the Python reference workflow, install <code>reticulate</code> and use the optional Python backend.</p>
+<p>Real-imputation model engines run with <code>n_threads = 1</code> by default so examples, tests, and shared systems use conservative CPU resources. Increase <code>n_threads</code> for faster local XGBoost, Random Forest, or LightGBM runs.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"reticulate"</span><span class="op">)</span></span></code></pre></div>
 <p>The Python backend uses these Python packages through <code>reticulate</code>:</p>

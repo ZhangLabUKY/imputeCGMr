@@ -65,6 +65,11 @@ The default R-native backend uses the R package `mice`. For closest
 agreement with the Python reference workflow, install `reticulate` and
 use the optional Python backend.
 
+Real-imputation model engines run with `n_threads = 1` by default so
+examples, tests, and shared systems use conservative CPU resources.
+Increase `n_threads` for faster local XGBoost, Random Forest, or
+LightGBM runs.
+
 ``` r
 
 install.packages("reticulate")

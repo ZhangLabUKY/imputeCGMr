@@ -370,6 +370,10 @@ threshold and <code>MICE+XGBoost</code> otherwise.</p>
 <p>The app shows only the tuning controls relevant to the selected
 method. For example, Random Forest shows the tree count, kNN shows the
 neighbor count, and LightGBM shows boosting rounds.</p>
+<p>The <strong>Model threads</strong> control maps to
+<code>n_threads</code>. It defaults to <code>1</code> for CRAN-friendly
+and shared-system-friendly CPU use. Increase it for faster local
+XGBoost, Random Forest, or LightGBM runs.</p>
 <div class="section level3">
 <h3 id="optional-sklearn-backend">Optional sklearn backend<a class="anchor" aria-label="anchor" href="#optional-sklearn-backend"></a>
 </h3>
@@ -427,6 +431,7 @@ imputation</strong>.</p>
 <span>  rf_n_estimators <span class="op">=</span> <span class="va">selected_rf_trees</span>,</span>
 <span>  knn_k <span class="op">=</span> <span class="va">selected_knn_neighbors</span>,</span>
 <span>  lgb_nrounds <span class="op">=</span> <span class="va">selected_lightgbm_rounds</span>,</span>
+<span>  n_threads <span class="op">=</span> <span class="va">selected_threads</span>,</span>
 <span>  seed <span class="op">=</span> <span class="va">selected_seed</span>,</span>
 <span>  export <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>

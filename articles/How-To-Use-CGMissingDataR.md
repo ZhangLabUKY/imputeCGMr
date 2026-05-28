@@ -277,6 +277,20 @@ implementation details in the minimal user-facing output. The returned
 data frame keeps only the original input columns plus
 `imputed_glucose_value`.
 
+## Thread control
+
+Real-imputation model engines use one thread by default:
+
+``` r
+
+n_threads = 1
+```
+
+This conservative default is friendly to CRAN checks and shared
+computing systems. Users can increase `n_threads` for faster local
+XGBoost, Random Forest, or LightGBM runs. ARIMA and kNN do not use this
+setting.
+
 ## Time handling and timestamp regularization
 
 The function accepts common timestamp formats, including

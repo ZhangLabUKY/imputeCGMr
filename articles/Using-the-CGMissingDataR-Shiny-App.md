@@ -266,6 +266,10 @@ The app shows only the tuning controls relevant to the selected method.
 For example, Random Forest shows the tree count, kNN shows the neighbor
 count, and LightGBM shows boosting rounds.
 
+The **Model threads** control maps to `n_threads`. It defaults to `1`
+for CRAN-friendly and shared-system-friendly CPU use. Increase it for
+faster local XGBoost, Random Forest, or LightGBM runs.
+
 ### Optional sklearn backend
 
 The optional Python-compatible backend is:
@@ -327,6 +331,7 @@ out <- run_missing_glucose_imputation(
   rf_n_estimators = selected_rf_trees,
   knn_k = selected_knn_neighbors,
   lgb_nrounds = selected_lightgbm_rounds,
+  n_threads = selected_threads,
   seed = selected_seed,
   export = FALSE
 )
