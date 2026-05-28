@@ -223,22 +223,22 @@ imputed.
 ## Examples
 
 ``` r
-data("CGMExmplDat10Pct")
+data("CGMExmplDat5Pct")
 out <- run_missing_glucose_imputation(
-  CGMExmplDat10Pct,
+  CGMExmplDat5Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
   time_col = "Time",
   imputer_backend = "mice"
 )
-#> Warning: Number of logged events: 37
+#> Warning: Number of logged events: 41
 head(subset(out, is.na(LBORRES)))
-#>    USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value
-#> 10      11   0      NA 2020-01-16 00:45:00  34   6.4             136.07945
-#> 31      11   0      NA 2020-01-16 02:30:00  34   6.4              79.64849
-#> 32      11   0      NA 2020-01-16 02:35:00  34   6.4              77.91698
-#> 33      11   0      NA 2020-01-16 02:40:00  34   6.4              76.78439
-#> 34      11   0      NA 2020-01-16 02:45:00  34   6.4             114.86286
-#> 55      11   0      NA 2020-01-16 04:30:00  34   6.4              81.52077
+#>     USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value
+#> 10       11   0      NA 2020-01-16 00:45:00  34   6.4             124.76679
+#> 31       11   0      NA 2020-01-16 02:30:00  34   6.4              83.82781
+#> 32       11   0      NA 2020-01-16 02:35:00  34   6.4              82.37366
+#> 55       11   0      NA 2020-01-16 04:30:00  34   6.4              78.75699
+#> 90       11   0      NA 2020-01-16 07:25:00  34   6.4             113.84458
+#> 146      11   0      NA 2020-01-16 12:05:00  34   6.4             129.06611
 ```
