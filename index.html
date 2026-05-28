@@ -65,6 +65,9 @@
 </h1></div>
 <!-- badges: start -->
 
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <p>Install the released version from CRAN:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"CGMissingDataR"</span><span class="op">)</span></span></code></pre></div>
@@ -76,6 +79,7 @@
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/run_missing_glucose_imputation.html">run_missing_glucose_imputation</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The function handles both explicit missing glucose values coded as <code>NA</code> and implicit missing readings caused by timestamp gaps. It accepts a data frame with a subject identifier, timestamp column, glucose column, and optional subject-level or visit-level covariates. It returns the user’s original columns plus <code>imputed_glucose_value</code>, leaving the original glucose column unchanged.</p>
+</div>
 <div class="section level2">
 <h2 id="what-the-imputation-workflow-does">What the imputation workflow does<a class="anchor" aria-label="anchor" href="#what-the-imputation-workflow-does"></a>
 </h2>

@@ -1,5 +1,7 @@
 # CGMmissingDataR
 
+## Installation
+
 Install the released version from CRAN:
 
 ``` r
