@@ -2,6 +2,8 @@
 
 ## CGMissingDataR 0.0.2
 
+CRAN release: 2026-05-30
+
 ### Major changes
 
 - [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)

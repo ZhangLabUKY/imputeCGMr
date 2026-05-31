@@ -13,7 +13,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/ZhangLabUKY/CGMmissingDataR/blob/master/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/ZhangLabUKY/CGMmissingDataR/blob/v0.0.2/DESCRIPTION)
 
 Saraswat S, Hasin Shahed Shad, Zhang X (2026). *CGMissingDataR: Impute
 Missing Glucose Values in CGM Data*. R package version 0.0.2,
