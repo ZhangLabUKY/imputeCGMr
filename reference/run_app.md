@@ -2,7 +2,7 @@
 
 Launches a Shiny app for uploading a CGM data file, selecting the
 target, subject, timestamp, and feature columns, running
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGM/reference/run_missing_glucose_imputation.md),
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMRR/reference/run_missing_glucose_imputation.md),
 previewing the imputed data, and downloading the completed data as a CSV
 file.
 

@@ -9,7 +9,7 @@ data sets for glucose values that are already missing in user data.
 
 Useful links:
 
-- <https://zhanglabuky.github.io/imputeCGM/>
+- <https://zhanglabuky.github.io/imputeCGMR/>
 
 - <https://github.com/ZhangLabUKY/imputeCGMR>
 
