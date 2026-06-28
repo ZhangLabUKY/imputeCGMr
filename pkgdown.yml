@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   How-To-Use-imputeCGM: How-To-Use-imputeCGM.html
   Using-the-imputeCGM-Shiny-App: Using-the-imputeCGM-Shiny-App.html
-last_built: 2026-06-28T02:13Z
+last_built: 2026-06-28T02:21Z
 urls:
   reference: https://zhanglabuky.github.io/imputeCGMR/reference
   article: https://zhanglabuky.github.io/imputeCGMR/articles
