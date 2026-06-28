@@ -1,4 +1,4 @@
-# CGMmissingDataR
+# imputeCGM
 
 ## Installation
 
@@ -6,7 +6,7 @@ Install the released version from CRAN:
 
 ``` r
 
-install.packages("CGMissingDataR")
+install.packages("imputeCGM")
 ```
 
 Or install the development version from GitHub:
@@ -14,10 +14,10 @@ Or install the development version from GitHub:
 ``` r
 
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/CGMmissingDataR")
+devtools::install_github("ZhangLabUKY/imputeCGMR")
 ```
 
-CGMmissingDataR imputes missing glucose values in continuous glucose
+imputeCGM imputes missing glucose values in continuous glucose
 monitoring (CGM) data. The main public workflow is:
 
 ``` r
@@ -34,7 +34,7 @@ original glucose column unchanged.
 
 ## What the imputation workflow does
 
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGM/reference/run_missing_glucose_imputation.md)
 performs the following steps:
 
 1.  reads a data frame or CSV file;
@@ -97,7 +97,7 @@ reticulate::py_install("lightgbm", pip = TRUE)
 
 ``` r
 
-library(CGMissingDataR)
+library(imputeCGM)
 
 data("CGMExmplDat10Pct")
 
@@ -160,11 +160,11 @@ missing glucose values.
 
 ## Bundled Shiny app
 
-CGMmissingDataR also includes a small Shiny app for users who prefer an
+imputeCGM also includes a small Shiny app for users who prefer an
 interactive workflow. The app lets users upload a CSV file or load one
 of the built-in example data sets, choose the target glucose, subject
 ID, timestamp, and feature columns, run
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md),
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGM/reference/run_missing_glucose_imputation.md),
 preview rows with missing glucose values that were imputed, and download
 the completed data as a CSV file.
 
@@ -195,7 +195,7 @@ install.packages("shiny")
 
 For package developers, the app is stored under
 `inst/shiny/cgm_imputation_app/` and is launched through the exported
-[`run_app()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_app.md)
+[`run_app()`](https://zhanglabuky.github.io/imputeCGM/reference/run_app.md)
 helper.
 
 ## Optional Python-compatible backend
@@ -227,14 +227,14 @@ The main vignette contains a detailed walkthrough of data requirements,
 timestamp regularization, return columns, backend selection, optional
 Python setup, and troubleshooting:
 
-<https://zhanglabuky.github.io/CGMmissingDataR/articles/How-To-Use-CGMissingDataR.html>
+<https://zhanglabuky.github.io/imputeCGM/articles/How-To-Use-imputeCGM.html>
 
 A separate Shiny app vignette walks through the interactive interface:
 
-<https://zhanglabuky.github.io/CGMmissingDataR/articles/Using-the-CGMissingDataR-Shiny-App.html>
+<https://zhanglabuky.github.io/imputeCGM/articles/Using-the-imputeCGM-Shiny-App.html>
 
 ## Changelog
 
 The changelog is available at:
 
-<https://zhanglabuky.github.io/CGMmissingDataR/news/index.html>
+<https://zhanglabuky.github.io/imputeCGM/news/index.html>

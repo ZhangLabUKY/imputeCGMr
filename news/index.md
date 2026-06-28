@@ -1,12 +1,21 @@
 # Changelog
 
-## CGMissingDataR 0.0.2
+## imputeCGM 0.0.3
 
-CRAN release: 2026-05-30
+- Renamed the package from `CGMissingDataR` to `imputeCGM`.
+
+- Updated package metadata, GitHub links, pkgdown links, README content,
+  vignette names, manual pages, tests, and Shiny app package references
+  for the new `imputeCGM` package identity.
+
+- Documentation now points to the new GitHub repository named
+  `imputeCGMR`.
+
+## imputeCGM 0.0.2
 
 ### Major changes
 
-- [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
+- [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGM/reference/run_missing_glucose_imputation.md)
   now handles both explicit missing glucose values and missing readings
   implied by timestamp gaps. When timestamps skip expected CGM
   intervals, the function regularizes each subject to the expected
@@ -26,7 +35,7 @@ CRAN release: 2026-05-30
   estimate. Users who need whole-number glucose values for reporting can
   round this column after imputation.
 
-- [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
+- [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGM/reference/run_missing_glucose_imputation.md)
   now supports selectable real-imputation methods through the existing
   `models` argument. The default `models = "auto"` keeps the
   missing-rate rule, using `MICE+ARIMA` when missingness is at or below
@@ -59,8 +68,6 @@ CRAN release: 2026-05-30
   simplified output structure, selectable final imputation methods, the
   bundled Shiny app, backend options, and post-imputation rounding.
 
-## CGMissingDataR 0.0.1
-
-CRAN release: 2026-02-03
+## imputeCGM 0.0.1
 
 - Initial package creation preparing for CRAN submission.

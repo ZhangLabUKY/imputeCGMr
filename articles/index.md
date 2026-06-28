@@ -1,11 +1,11 @@
 # Articles
 
-### How To Use CGMmissingDataR
+### How To Use imputeCGM
 
 - [How To Use
-  CGMmissingDataR](https://zhanglabuky.github.io/CGMmissingDataR/articles/How-To-Use-CGMissingDataR.md):
+  imputeCGM](https://zhanglabuky.github.io/imputeCGM/articles/How-To-Use-imputeCGM.md):
 
 ### Using the Shiny App
 
-- [Using the CGMmissingDataR Shiny
-  App](https://zhanglabuky.github.io/CGMmissingDataR/articles/Using-the-CGMissingDataR-Shiny-App.md):
+- [Using the imputeCGM Shiny
+  App](https://zhanglabuky.github.io/imputeCGM/articles/Using-the-imputeCGM-Shiny-App.md):

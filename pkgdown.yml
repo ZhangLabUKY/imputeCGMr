@@ -2,9 +2,9 @@ pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  How-To-Use-CGMissingDataR: How-To-Use-CGMissingDataR.html
-  Using-the-CGMissingDataR-Shiny-App: Using-the-CGMissingDataR-Shiny-App.html
-last_built: 2026-05-31T16:34Z
+  How-To-Use-imputeCGM: How-To-Use-imputeCGM.html
+  Using-the-imputeCGM-Shiny-App: Using-the-imputeCGM-Shiny-App.html
+last_built: 2026-06-28T01:20Z
 urls:
-  reference: https://zhanglabuky.github.io/CGMmissingDataR/reference
-  article: https://zhanglabuky.github.io/CGMmissingDataR/articles
+  reference: https://zhanglabuky.github.io/imputeCGM/reference
+  article: https://zhanglabuky.github.io/imputeCGM/articles
