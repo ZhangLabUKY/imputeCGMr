@@ -20,9 +20,8 @@ Invisibly returns the result of
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Run the imputeCGM Shiny app
+if (interactive()) {
 run_app()
-} # }
+}
 
 ```

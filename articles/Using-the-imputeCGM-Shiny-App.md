@@ -333,7 +333,7 @@ out <- run_missing_glucose_imputation(
   lgb_nrounds = selected_lightgbm_rounds,
   n_threads = selected_threads,
   seed = selected_seed,
-  export = FALSE
+  export_path = NULL
 )
 ```
 

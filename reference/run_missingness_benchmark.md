@@ -27,7 +27,7 @@ run_missingness_benchmark(
   mask_type = c("random", "block"),
   rf_n_estimators = 400,
   knn_k = 7,
-  seed = 42,
+  seed = NULL,
   lag_k = c(1, 2, 3),
   add_rollmean = TRUE,
   roll_window = 3
@@ -80,7 +80,8 @@ run_missingness_benchmark(
 
 - seed:
 
-  Integer: random seed used for MICE and models (default 42).
+  Optional integer seed used for masking, MICE, and models. The default
+  `NULL` does not set the user's random-number generator state.
 
 - lag_k:
 

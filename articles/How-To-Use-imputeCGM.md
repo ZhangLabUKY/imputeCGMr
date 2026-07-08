@@ -248,12 +248,12 @@ head(impute_out[missing_rows, c(
   "imputed_glucose_value"
 )])
 #>    USUBJID                Time LBORRES imputed_glucose_value
-#> 10      11 2020-01-16 00:45:00      NA              169.4575
-#> 31      11 2020-01-16 02:30:00      NA              158.6228
-#> 32      11 2020-01-16 02:35:00      NA              160.8414
-#> 33      11 2020-01-16 02:40:00      NA              158.6228
-#> 34      11 2020-01-16 02:45:00      NA              167.9458
-#> 55      11 2020-01-16 04:30:00      NA              158.6228
+#> 10      11 2020-01-16 00:45:00      NA              169.8482
+#> 31      11 2020-01-16 02:30:00      NA              157.9613
+#> 32      11 2020-01-16 02:35:00      NA              157.9613
+#> 33      11 2020-01-16 02:40:00      NA              165.5494
+#> 34      11 2020-01-16 02:45:00      NA              162.1897
+#> 55      11 2020-01-16 04:30:00      NA              157.9613
 ```
 
 ## How the method is selected
@@ -448,10 +448,13 @@ Python libraries to perform the full strict path.
 
 ## Exporting results
 
-Set `export = TRUE` to write the returned imputed data frame to a
-timestamped CSV file in the current working directory.
+Set `export_path` to write the returned imputed data frame to an
+explicit CSV file path. The default `export_path = NULL` does not write
+any files.
 
 ``` r
+
+export_file <- file.path(tempdir(), "imputed_cgm_data.csv")
 
 out <- run_missing_glucose_imputation(
   CGMExmplDat10Pct,
@@ -460,7 +463,7 @@ out <- run_missing_glucose_imputation(
   id_col = "USUBJID",
   time_col = "Time",
   imputer_backend = "mice",
-  export = TRUE
+  export_path = export_file
 )
 ```
 
@@ -563,15 +566,15 @@ utils::sessionInfo()
 #> [17] foreach_1.5.2     jomo_2.7-6        jsonlite_2.0.0    glmnet_5.0       
 #> [21] Matrix_1.7-5      nnet_7.3-20       backports_1.5.1   survival_3.8-6   
 #> [25] purrr_1.2.2       codetools_0.2-20  textshaping_1.0.5 jquerylib_0.1.4  
-#> [29] reformulas_0.4.4  Rdpack_2.6.6      cli_3.6.6         rlang_1.2.0      
+#> [29] reformulas_0.4.4  Rdpack_2.6.6      cli_3.6.6         rlang_1.3.0      
 #> [33] rbibutils_2.4.1   splines_4.6.1     cachem_1.1.0      yaml_2.3.12      
-#> [37] pan_1.9           otel_0.2.0        FNN_1.1.4.1       tools_4.6.1      
+#> [37] pan_2.0           otel_0.2.0        FNN_1.1.4.1       tools_4.6.1      
 #> [41] nloptr_2.2.1      minqa_1.2.8       dplyr_1.2.1       ranger_0.18.0    
 #> [45] boot_1.3-32       broom_1.0.13      rpart_4.1.27      vctrs_0.7.3      
 #> [49] R6_2.6.1          lifecycle_1.0.5   fs_2.1.0          MASS_7.3-65      
 #> [53] ragg_1.5.2        pkgconfig_2.0.3   desc_1.4.3        pkgdown_2.2.0    
 #> [57] pillar_1.11.1     bslib_0.11.0      data.table_1.18.4 glue_1.8.1       
-#> [61] Rcpp_1.1.1-1.1    systemfonts_1.3.2 xfun_0.59         tibble_3.3.1     
+#> [61] Rcpp_1.1.2        systemfonts_1.3.2 xfun_0.59         tibble_3.3.1     
 #> [65] tidyselect_1.2.1  knitr_1.51        nlme_3.1-169      htmltools_0.5.9  
 #> [69] rmarkdown_2.31    compiler_4.6.1
 ```

@@ -26,7 +26,7 @@ run_missing_glucose_imputation(
   lgb_nrounds = 400,
   n_threads = 1L,
   arima_order = c(4L, 1L, 0L),
-  seed = 42,
+  seed = NULL,
   lag_k = c(1L, 2L, 3L),
   add_rollmean = TRUE,
   roll_window = 3L,
@@ -37,7 +37,7 @@ run_missing_glucose_imputation(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  export = FALSE
+  export_path = NULL
 )
 ```
 
@@ -123,8 +123,9 @@ run_missing_glucose_imputation(
 
 - seed:
 
-  Integer seed for reproducible MICE, tree-based models, and the
-  Python-compatible backend. Default is 42.
+  Optional integer seed for reproducible MICE, tree-based models, and
+  the Python-compatible backend. The default `NULL` leaves the user's
+  random-number generator state uncontrolled.
 
 - lag_k:
 
@@ -182,11 +183,11 @@ run_missing_glucose_imputation(
   the CRAN-safe R-native backend. `"sklearn"` uses Python modules
   through `reticulate` for a Python-compatible workflow.
 
-- export:
+- export_path:
 
-  Logical; if `TRUE`, writes the returned imputed data frame to a
-  timestamped CSV file in the current working directory. Default is
-  `FALSE`.
+  Optional single file path. If supplied, the returned imputed data
+  frame is also written to this CSV file. The default `NULL` does not
+  write any files.
 
 ## Value
 
@@ -243,10 +244,10 @@ out <- run_missing_glucose_imputation(
 #> Warning: Number of logged events: 41
 head(subset(out, is.na(LBORRES)))
 #>     USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value
-#> 10       11   0      NA 2020-01-16 00:45:00  34   6.4             124.76679
-#> 31       11   0      NA 2020-01-16 02:30:00  34   6.4              83.82781
-#> 32       11   0      NA 2020-01-16 02:35:00  34   6.4              82.37366
-#> 55       11   0      NA 2020-01-16 04:30:00  34   6.4              78.75699
-#> 90       11   0      NA 2020-01-16 07:25:00  34   6.4             113.84458
-#> 146      11   0      NA 2020-01-16 12:05:00  34   6.4             129.06611
+#> 10       11   0      NA 2020-01-16 00:45:00  34   6.4             128.37259
+#> 31       11   0      NA 2020-01-16 02:30:00  34   6.4              84.86497
+#> 32       11   0      NA 2020-01-16 02:35:00  34   6.4              84.31479
+#> 55       11   0      NA 2020-01-16 04:30:00  34   6.4              82.58833
+#> 90       11   0      NA 2020-01-16 07:25:00  34   6.4             109.05645
+#> 146      11   0      NA 2020-01-16 12:05:00  34   6.4             126.56713
 ```

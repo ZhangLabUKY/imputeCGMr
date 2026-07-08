@@ -80,7 +80,7 @@ Masked Count for each method and mask rate.</p>
 <span>  mask_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"random"</span>, <span class="st">"block"</span><span class="op">)</span>,</span>
 <span>  rf_n_estimators <span class="op">=</span> <span class="fl">400</span>,</span>
 <span>  knn_k <span class="op">=</span> <span class="fl">7</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  lag_k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>,</span>
 <span>  add_rollmean <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  roll_window <span class="op">=</span> <span class="fl">3</span></span>
@@ -129,7 +129,8 @@ If NULL, uses all columns except <code>target_col</code>.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Integer: random seed used for MICE and models (default 42).</p></dd>
+<dd><p>Optional integer seed used for masking, MICE, and models.
+The default <code>NULL</code> does not set the user's random-number generator state.</p></dd>
 
 
 <dt id="arg-lag-k">lag_k<a class="anchor" aria-label="anchor" href="#arg-lag-k"></a></dt>

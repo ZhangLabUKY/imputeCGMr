@@ -82,7 +82,7 @@ imputation method.</p>
 <span>  lgb_nrounds <span class="op">=</span> <span class="fl">400</span>,</span>
 <span>  n_threads <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  arima_order <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4L</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  lag_k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span>, <span class="fl">3L</span><span class="op">)</span>,</span>
 <span>  add_rollmean <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  roll_window <span class="op">=</span> <span class="fl">3L</span>,</span>
@@ -93,7 +93,7 @@ imputation method.</p>
 <span>  use_arima_if_missing_leq <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  arima_min_history <span class="op">=</span> <span class="fl">20L</span>,</span>
 <span>  imputer_backend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mice"</span>, <span class="st">"sklearn"</span><span class="op">)</span>,</span>
-<span>  export <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  export_path <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -183,8 +183,9 @@ LightGBM runs. ARIMA and kNN do not use this setting.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Integer seed for reproducible MICE, tree-based models, and the
-Python-compatible backend. Default is 42.</p></dd>
+<dd><p>Optional integer seed for reproducible MICE, tree-based models,
+and the Python-compatible backend. The default <code>NULL</code> leaves the user's
+random-number generator state uncontrolled.</p></dd>
 
 
 <dt id="arg-lag-k">lag_k<a class="anchor" aria-label="anchor" href="#arg-lag-k"></a></dt>
@@ -243,9 +244,10 @@ R package <code>mice</code> as the CRAN-safe R-native backend. <code>"sklearn"</
 Python modules through <code>reticulate</code> for a Python-compatible workflow.</p></dd>
 
 
-<dt id="arg-export">export<a class="anchor" aria-label="anchor" href="#arg-export"></a></dt>
-<dd><p>Logical; if <code>TRUE</code>, writes the returned imputed data frame to a
-timestamped CSV file in the current working directory. Default is <code>FALSE</code>.</p></dd>
+<dt id="arg-export-path">export_path<a class="anchor" aria-label="anchor" href="#arg-export-path"></a></dt>
+<dd><p>Optional single file path. If supplied, the returned
+imputed data frame is also written to this CSV file. The default <code>NULL</code>
+does not write any files.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -297,12 +299,12 @@ study-period coverage gaps are reported but are not imputed.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Number of logged events: 41</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">out</span>, <span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">LBORRES</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10       11   0      NA 2020-01-16 00:45:00  34   6.4             124.76679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31       11   0      NA 2020-01-16 02:30:00  34   6.4              83.82781</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32       11   0      NA 2020-01-16 02:35:00  34   6.4              82.37366</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 55       11   0      NA 2020-01-16 04:30:00  34   6.4              78.75699</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 90       11   0      NA 2020-01-16 07:25:00  34   6.4             113.84458</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 146      11   0      NA 2020-01-16 12:05:00  34   6.4             129.06611</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10       11   0      NA 2020-01-16 00:45:00  34   6.4             128.37259</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31       11   0      NA 2020-01-16 02:30:00  34   6.4              84.86497</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32       11   0      NA 2020-01-16 02:35:00  34   6.4              84.31479</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 55       11   0      NA 2020-01-16 04:30:00  34   6.4              82.58833</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 90       11   0      NA 2020-01-16 07:25:00  34   6.4             109.05645</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 146      11   0      NA 2020-01-16 12:05:00  34   6.4             126.56713</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
