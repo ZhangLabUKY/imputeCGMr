@@ -19,7 +19,7 @@ run_missing_glucose_imputation(
   lgb_nrounds = 400,
   n_threads = 1L,
   arima_order = c(4L, 1L, 0L),
-  seed = 42,
+  seed = NULL,
   lag_k = c(1L, 2L, 3L),
   add_rollmean = TRUE,
   roll_window = 3L,
@@ -30,7 +30,7 @@ run_missing_glucose_imputation(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  export = FALSE
+  export_path = NULL
 )
 }
 \arguments{
@@ -87,8 +87,9 @@ LightGBM runs. ARIMA and kNN do not use this setting.}
 \item{arima_order}{Integer vector of length 3. Python default is
 \code{c(4L, 1L, 0L)}.}
 
-\item{seed}{Integer seed for reproducible MICE, tree-based models, and the
-Python-compatible backend. Default is 42.}
+\item{seed}{Optional integer seed for reproducible MICE, tree-based models,
+and the Python-compatible backend. The default \code{NULL} leaves the user's
+random-number generator state uncontrolled.}
 
 \item{lag_k}{Integer vector of target lags to compute. Python default is
 \code{c(1L, 2L, 3L)}.}
@@ -126,8 +127,9 @@ fitting ARIMA for a missing segment. Python default is 20.}
 R package \code{mice} as the CRAN-safe R-native backend. \code{"sklearn"} uses
 Python modules through \code{reticulate} for a Python-compatible workflow.}
 
-\item{export}{Logical; if \code{TRUE}, writes the returned imputed data frame to a
-timestamped CSV file in the current working directory. Default is \code{FALSE}.}
+\item{export_path}{Optional single file path. If supplied, the returned
+imputed data frame is also written to this CSV file. The default \code{NULL}
+does not write any files.}
 }
 \value{
 A data.frame containing the original user-supplied columns plus

@@ -16,8 +16,7 @@ subject, timestamp, and feature columns, running
 downloading the completed data as a CSV file.
 }
 \examples{
-\dontrun{
-# Run the imputeCGM Shiny app
+if (interactive()) {
 run_app()
 }
 

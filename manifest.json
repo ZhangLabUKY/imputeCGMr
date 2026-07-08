@@ -39,6 +39,42 @@
         "Archs": "x64"
       }
     },
+    "CGMissingDataR": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Package": "CGMissingDataR",
+        "Title": "Impute Missing Glucose Values in CGM Data",
+        "Version": "0.0.2",
+        "Authors@R": "c(\n    person(\"Shubh\", \"Saraswat\", email = \"shubh.saraswat00@gmail.com\", role = c(\"cre\", \"aut\", \"cph\"),\n    comment = c(ORCID = \"0009-0009-2359-1484\")),\n    person(\"Hasin Shahed Shad\", email = \"hasin.shad@uky.edu\", role = \"aut\"),\n    person(\"Xiaohua Douglas\", \"Zhang\", email = \"douglas.zhang@uky.edu\", role = \"aut\",\n    comment = c(ORCID = \"0000-0002-2486-7931\")))",
+        "Description": "Imputes missing glucose values in repeated-measures continuous\n    glucose monitoring (CGM) data. Workflows create time-series features from\n    raw timestamps, support model selection, and return the user's original\n    columns plus an imputed glucose column. Methods include multiple imputation\n    by chained equations (MICE; Azur et al. (2011) <doi:10.1002/mpr.329>),\n    Random Forest regression (Breiman (2001) <doi:10.1023/A:1010933404324>),\n    k-nearest-neighbor regression (Zhang (2016) <doi:10.21037/atm.2016.03.37>),\n    XGBoost (Chen and Guestrin (2016) <doi:10.1145/2939672.2939785>),\n    LightGBM (Ke et al. (2017)\n    <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision>),\n    and ARIMA forecasting with the forecast framework (Hyndman and Khandakar\n    (2008) <doi:10.18637/jss.v027.i03>). A Python-compatible backend uses\n    'reticulate' to call 'pandas', 'scikit-learn', 'statsmodels', Python\n    'xgboost', and optional Python 'lightgbm'.",
+        "License": "GPL (>= 2)",
+        "Encoding": "UTF-8",
+        "Depends": "R (>= 4.3)",
+        "RoxygenNote": "7.3.3",
+        "Imports": "mice, FNN, ranger, data.table, xgboost, lightgbm, forecast,\nCGManalyzer, lifecycle, reticulate, shiny",
+        "Suggests": "testthat (>= 3.0.0), spelling, knitr, rmarkdown",
+        "Config/testthat/edition": "3",
+        "NeedsCompilation": "no",
+        "Language": "en-US",
+        "URL": "https://zhanglabuky.github.io/CGMmissingDataR/,\nhttps://github.com/ZhangLabUKY/CGMmissingDataR",
+        "BugReports": "https://github.com/ZhangLabUKY/CGMmissingDataR/issues",
+        "LazyData": "true",
+        "VignetteBuilder": "knitr",
+        "Packaged": "2026-05-29 22:10:01 UTC; ssa390",
+        "Author": "Shubh Saraswat [cre, aut, cph] (ORCID:\n    <https://orcid.org/0009-0009-2359-1484>),\n  Hasin Shahed Shad [aut],\n  Xiaohua Douglas Zhang [aut] (ORCID:\n    <https://orcid.org/0000-0002-2486-7931>)",
+        "Maintainer": "Shubh Saraswat <shubh.saraswat00@gmail.com>",
+        "Repository": "CRAN",
+        "Date/Publication": "2026-05-30 15:10:23 UTC",
+        "Built": "R 4.5.3; ; 2026-05-31 23:51:01 UTC; windows",
+        "RemoteType": "standard",
+        "RemotePkgRef": "CGMissingDataR",
+        "RemoteRef": "CGMissingDataR",
+        "RemoteRepos": "https://cran.rstudio.com/",
+        "RemotePkgPlatform": "i386+x86_64-w64-mingw32",
+        "RemoteSha": "0.0.2"
+      }
+    },
     "FNN": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -4272,7 +4308,7 @@
         "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
         "Repository": "CRAN",
         "Date/Publication": "2026-01-17 16:10:02 UTC",
-        "Built": "R 4.5.2; x86_64-w64-mingw32; 2026-02-22 02:31:10 UTC; windows",
+        "Built": "R 4.5.3; x86_64-w64-mingw32; 2026-06-01 02:47:10 UTC; windows",
         "Archs": "x64"
       }
     },
@@ -4358,16 +4394,19 @@
   },
   "files": {
     ".github/workflows/pkgdown.yaml": {
-      "checksum": "126c9ebef76ffb54156d760faa99a500"
+      "checksum": "bc69eb48629602713c31f69ebd708ac1"
     },
     ".github/workflows/R-CMD-check.yaml": {
       "checksum": "5b617f468c5ae8086e3a0f5f64892c05"
     },
+    ".github/workflows/rhub.yaml": {
+      "checksum": "c551fc6e34069e7b6747c58145e9cc70"
+    },
     ".Rbuildignore": {
-      "checksum": "c8e54bec403dbaeaa00648bc29b315eb"
+      "checksum": "6d9a0de2d6f1e1438e8b0e40d6022a70"
     },
     "_pkgdown.yml": {
-      "checksum": "b1a08d004ae962f321d14170de9f6047"
+      "checksum": "685046ca91f55f19d849332f2415cdf6"
     },
     "app.R": {
       "checksum": "29c4bcbd151dd1c21b3d6d7dab3fb0df"
@@ -4376,10 +4415,10 @@
       "checksum": "ac93983e24ad9b1ebe710d265f7f00ee"
     },
     "cran-comments.md": {
-      "checksum": "19c0ec03ee9418d5ac8e59786d590f93"
+      "checksum": "2046b460a0bc9f48352a8611018166c1"
     },
     "CRAN-SUBMISSION": {
-      "checksum": "07d5cc7608a63fda1d853f3bb688713a"
+      "checksum": "a1f4c626362e9591926f9ba8ffb68349"
     },
     "data-raw/CGMCompleteExampleData.csv": {
       "checksum": "6ade3e0b4fd2958c3f326eee88f2d83f"
@@ -4406,58 +4445,70 @@
       "checksum": "f6ade1c56b3258d587784382fbcc8420"
     },
     "DESCRIPTION": {
-      "checksum": "3059aa416cb120eb450f5f241563759f"
+      "checksum": "58f284f96691766a9aaae84ce4323495"
     },
     "dev_notes/cran-threading.md": {
       "checksum": "0e04c679888ff0f0bd8036225706f75b"
     },
-    "doc/How-To-Use-imputeCGM.html": {
+    "doc/How-To-Use-CGMissingDataR.html": {
       "checksum": "42def99e38c8216eac3a6a3f734cac09"
     },
-    "doc/How-To-Use-imputeCGM.R": {
+    "doc/How-To-Use-CGMissingDataR.R": {
       "checksum": "d336160793b25a7644a367619d4f65bf"
     },
-    "doc/How-To-Use-imputeCGM.Rmd": {
+    "doc/How-To-Use-CGMissingDataR.Rmd": {
       "checksum": "9fcb6ab2dd29e738901e193d456ce009"
     },
-    "doc/Using-the-imputeCGM-Shiny-App.html": {
+    "doc/Using-the-CGMissingDataR-Shiny-App.html": {
       "checksum": "6ef2f9678f379a4e7ef30c8a61de0c8b"
     },
-    "doc/Using-the-imputeCGM-Shiny-App.R": {
+    "doc/Using-the-CGMissingDataR-Shiny-App.R": {
       "checksum": "1175468147da8ccfd206d972cb67e5e3"
     },
-    "doc/Using-the-imputeCGM-Shiny-App.Rmd": {
+    "doc/Using-the-CGMissingDataR-Shiny-App.Rmd": {
       "checksum": "fb4dfc8abf1a7a4f5b86b77c933e2bed"
     },
     "docs/404.html": {
-      "checksum": "cc17cde05ae53a9bd801864eb418644b"
+      "checksum": "00f2879450a144d81977059036fcf9e2"
     },
     "docs/404.md": {
       "checksum": "1e66acd56c510518f4f5bd64aef8f5cc"
     },
+    "docs/articles/How-To-Use-CGMissingDataR.html": {
+      "checksum": "5053e2bd174cd6738549f2fb196f725d"
+    },
+    "docs/articles/How-To-Use-CGMissingDataR.md": {
+      "checksum": "cdc4f3b72911655cbb0c1dfd82f61bcb"
+    },
     "docs/articles/How-To-Use-imputeCGM.html": {
-      "checksum": "3f53b9d30131deafe87b07a78951b4b5"
+      "checksum": "b6022f9440f2a748890deb4006399924"
     },
     "docs/articles/How-To-Use-imputeCGM.md": {
-      "checksum": "e32b5510c3c29892e1521c248400e12d"
+      "checksum": "dbca35a35c49e6b67d22e73430ec09b3"
     },
     "docs/articles/index.html": {
-      "checksum": "9e04e14f169416d609e1dfbd99582670"
+      "checksum": "79e9a409ab77a7e1168c9fda64e6d447"
     },
     "docs/articles/index.md": {
-      "checksum": "99c7f8b19c1bdba236ced1e972277419"
+      "checksum": "e96826522be7a49ffa23a3c3bce6f28a"
+    },
+    "docs/articles/Using-the-CGMissingDataR-Shiny-App.html": {
+      "checksum": "af8155985a83b420cb85ab561dea4549"
+    },
+    "docs/articles/Using-the-CGMissingDataR-Shiny-App.md": {
+      "checksum": "9a4b635a650bd3f3613159dbec255261"
     },
     "docs/articles/Using-the-imputeCGM-Shiny-App.html": {
-      "checksum": "8560c27d0ef6438f53431e58a5123732"
+      "checksum": "5585b6bbc0514c19046ce62996d76733"
     },
     "docs/articles/Using-the-imputeCGM-Shiny-App.md": {
-      "checksum": "0cbce22478f72e200b2a29673a8220e6"
+      "checksum": "74706e0ac3689fa247491536049eeb18"
     },
     "docs/authors.html": {
-      "checksum": "c6ae004b9c7be7418872cc70d34d5d2d"
+      "checksum": "5e4550a6ae47d73f73b6ca6584977e73"
     },
     "docs/authors.md": {
-      "checksum": "9f8a643f63396cf72a9aa24553828376"
+      "checksum": "9ac70bac87c4bed1559974d93700de6e"
     },
     "docs/deps/bootstrap-5.3.1/bootstrap.bundle.min.js": {
       "checksum": "e2b09c06f0e714b6144a6788a28e3950"
@@ -4537,10 +4588,10 @@
     "docs/deps/search-1.0.0/mark.min.js": {
       "checksum": "d0c5399929d81f67cd6d7687880498a6"
     },
-    "docs/dev/articles/How-To-Use-imputeCGM.html": {
+    "docs/dev/articles/How-To-Use-CGMissingDataR.html": {
       "checksum": "9be391f4342f2ffd064b5a4a5f5e2e41"
     },
-    "docs/dev/articles/How-To-Use-imputeCGM.md": {
+    "docs/dev/articles/How-To-Use-CGMissingDataR.md": {
       "checksum": "45e498b1a16e1fcefdade66ef96acc07"
     },
     "docs/dev/articles/index.html": {
@@ -4549,10 +4600,10 @@
     "docs/dev/articles/index.md": {
       "checksum": "07a634ce12d206bb56b84846ea1332dd"
     },
-    "docs/dev/articles/Using-the-imputeCGM-Shiny-App.html": {
+    "docs/dev/articles/Using-the-CGMissingDataR-Shiny-App.html": {
       "checksum": "aaebcc7b0484f27529baf8cb0ab41fde"
     },
-    "docs/dev/articles/Using-the-imputeCGM-Shiny-App.md": {
+    "docs/dev/articles/Using-the-CGMissingDataR-Shiny-App.md": {
       "checksum": "6c6729b2f5048b5311effb2e6c84a571"
     },
     "docs/dev/authors.html": {
@@ -4699,13 +4750,13 @@
     "docs/dev/reference/CGMExmplDat5Pct.md": {
       "checksum": "3cd4e70bd7f3a613b83b5affbaae0b3d"
     },
-    "docs/dev/reference/imputeCGM-package.html": {
+    "docs/dev/reference/CGMissingDataR-package.html": {
       "checksum": "341ad5b08fcc3c7000b95344d8a05bd4"
     },
-    "docs/dev/reference/imputeCGM-package.md": {
+    "docs/dev/reference/CGMissingDataR-package.md": {
       "checksum": "9fc11dfcb4f8e04421d5a2e6a9350ded"
     },
-    "docs/dev/reference/imputeCGM.html": {
+    "docs/dev/reference/CGMissingDataR.html": {
       "checksum": "9f80a94a26ee3abda3d341e2ec14db12"
     },
     "docs/dev/reference/index.html": {
@@ -4745,16 +4796,16 @@
       "checksum": "ee10e103e3360e45d9ed71c544b29755"
     },
     "docs/index.html": {
-      "checksum": "54c97a88e5dbf781eda9d05d5be4a808"
+      "checksum": "60de7d01b33e3fc42bfbfd050bfc370b"
     },
     "docs/index.md": {
-      "checksum": "e9b9fc357bbb992d4a027cb18d2759fc"
+      "checksum": "14998daf7b2d184503a56c0626474b77"
     },
     "docs/katex-auto.js": {
       "checksum": "b890f6fad8eb9ce3a32eea2239934274"
     },
     "docs/LICENSE.html": {
-      "checksum": "33c2cf07bb2c95ce181d3a76f2575f0f"
+      "checksum": "76a109d272b199032da061099cbae4fc"
     },
     "docs/LICENSE.md": {
       "checksum": "34bd8abef5fe3f471c1d10ccbf2aed6f"
@@ -4766,82 +4817,91 @@
       "checksum": "4759f31f8a585e9af173fc579d730265"
     },
     "docs/llms.txt": {
-      "checksum": "eaf6cdc9025f62716a17c371ffbe71b9"
+      "checksum": "4e5afc6093f283ae961fce102904b386"
     },
     "docs/news/index.html": {
-      "checksum": "c49d4f324c5366e6aeece284bd739002"
+      "checksum": "cf1faa2f077703bcfb8133d78afbeef2"
     },
     "docs/news/index.md": {
-      "checksum": "cee2c1f42fceff163109b7cb7a1c6302"
+      "checksum": "6c88847b7c78cfd854a479af1b3fa645"
     },
     "docs/pkgdown.js": {
       "checksum": "1c9c0d6bf54c521a9993e0b2d23c5d08"
     },
     "docs/pkgdown.yml": {
-      "checksum": "64ab9f90f772a8e055343507831faefe"
+      "checksum": "fd344de8cbb3e095ee13897b98257c34"
     },
     "docs/reference/CGMExampleData.html": {
       "checksum": "18361689829d4e9a5d2f094afaad1e9e"
     },
     "docs/reference/CGMExampleData.md": {
-      "checksum": "eb8a3a8f7c773746cd7c2d6debadc667"
+      "checksum": "8dbb6dbdeb23b27930a8ae95da1687fe"
     },
     "docs/reference/CGMExmplDat10Pct.html": {
-      "checksum": "8cdb81dd3ab7734c50f98ffb0c5e5ce3"
+      "checksum": "02d54ffad385893eaa3a162cda934b96"
     },
     "docs/reference/CGMExmplDat10Pct.md": {
       "checksum": "e9cb4b84aebb3f02410c650b47a96d2b"
     },
     "docs/reference/CGMExmplDat5Pct.html": {
-      "checksum": "13fdc631e41e909a7a06c0b539a1a220"
+      "checksum": "e23d46bbe793898da0c28890ff72f72f"
     },
     "docs/reference/CGMExmplDat5Pct.md": {
       "checksum": "9292cb79787e2ac8ee2ac6208b6cd59a"
     },
-    "docs/reference/imputeCGM-package.html": {
+    "docs/reference/CGMissingDataR-package.html": {
       "checksum": "9db519deafe0af4da34a6488b57b21f7"
     },
-    "docs/reference/imputeCGM-package.md": {
+    "docs/reference/CGMissingDataR-package.md": {
       "checksum": "ada9f5a05469c35aec1da4a7a9fd7f1d"
     },
-    "docs/reference/imputeCGM.html": {
+    "docs/reference/CGMissingDataR.html": {
       "checksum": "cc72e775f1e5aef8384ff0fb118a1279"
     },
+    "docs/reference/imputeCGM-package.html": {
+      "checksum": "6cf5e44310344bdd71b6f0d16e9fc9bd"
+    },
+    "docs/reference/imputeCGM-package.md": {
+      "checksum": "d16d3506ca0ed482312b54feab84078d"
+    },
+    "docs/reference/imputeCGM.html": {
+      "checksum": "9077a362e24c684c09c25396cef046dc"
+    },
     "docs/reference/index.html": {
-      "checksum": "99d6ab22e49773ca851b190b0d925bf8"
+      "checksum": "cc7af3002f609b177429e30ad8fbad30"
     },
     "docs/reference/index.md": {
-      "checksum": "23fbb8e670d10e7aee2a52cb7a6348b6"
+      "checksum": "23dfdb46d8657c1bf9501a69a1828fcf"
     },
     "docs/reference/run_app.html": {
-      "checksum": "f9c2ba61040c773f210f2531a1f962d9"
+      "checksum": "c19083f87b4f283afbd4043d4cfbdd3a"
     },
     "docs/reference/run_app.md": {
-      "checksum": "72c483476f57fc3408de11c1467ff3ce"
+      "checksum": "6603ae9bfd20759fdfc1d542e03fabf7"
     },
     "docs/reference/run_missing_glucose_imputation.html": {
-      "checksum": "368100a6977f63b55c80e6d847e50381"
+      "checksum": "9bb90682ed0250bcfcfb00e7826771b0"
     },
     "docs/reference/run_missing_glucose_imputation.md": {
-      "checksum": "093c0cb2eb34f1967c46370664cd2d61"
+      "checksum": "a0adcd427e1bd48bad70f5b3027a0e32"
     },
     "docs/reference/run_missingness_benchmark.html": {
-      "checksum": "234cf5069068e195b61a93ad01e9d820"
+      "checksum": "08b5d8945d18d7b0e9bf84014e6d4fb1"
     },
     "docs/reference/run_missingness_benchmark.md": {
-      "checksum": "a50af12a076341d88dd99a42476d71bf"
+      "checksum": "f9d5cdea4d5f31c349ce282566d65c75"
     },
     "docs/search.json": {
-      "checksum": "5a2d5566d9084d3dd0d85ca0b639b5e3"
+      "checksum": "71801167fe32dcdcb9c3ab3cf37e698b"
     },
     "docs/sitemap.xml": {
-      "checksum": "1e1ec0dd6900ddf58c171f149be09264"
+      "checksum": "0d667ef785085842a712141e263cf30f"
     },
     "inst/shiny/cgm_imputation_app/app.R": {
-      "checksum": "15214fc0af7205349e9b17a113a205de"
+      "checksum": "fe615d3cb2c96a548772edd0b3b13fd1"
     },
     "inst/WORDLIST": {
-      "checksum": "31075953fd9ce0571645c7bed2a0047c"
+      "checksum": "d34b73d69e522529265fe4f8731710c1"
     },
     "LICENSE.md": {
       "checksum": "3d82780e8917b360cbee7b9ec3e40734"
@@ -4853,16 +4913,16 @@
       "checksum": "2230ebec23fb6372fe3b62185023b9c9"
     },
     "man/imputeCGM-package.Rd": {
-      "checksum": "7ac1bd17e61dd724849e58b79359b51a"
+      "checksum": "d43b73b65408e6df9ef1ba22e20ce934"
     },
     "man/run_app.Rd": {
-      "checksum": "6621db863a66fafd92f2b9a81930135d"
+      "checksum": "4fab036ee21bb672c188740638cbc174"
     },
     "man/run_missing_glucose_imputation.Rd": {
-      "checksum": "7910c0d384e1396724da17e92792e63a"
+      "checksum": "19e641393ef807fdfd0a97ad8d0a9793"
     },
     "man/run_missingness_benchmark.Rd": {
-      "checksum": "92b638d1f091bf54cc1d9aecfc948dca"
+      "checksum": "2a77d1a1d5f766d2069f29c1f918c330"
     },
     "Meta/vignette.rds": {
       "checksum": "80b6b330825ac39118c3bcc0f514d0e4"
@@ -4871,10 +4931,7 @@
       "checksum": "4db07b5cd89a36d9137c5426fb8b8f2b"
     },
     "NEWS.md": {
-      "checksum": "bd0c38065fd715a4dec5f7e0f229fe20"
-    },
-    "R/imputeCGM-package.R": {
-      "checksum": "e64e038853ac5e6e4652d11ce90645e2"
+      "checksum": "0336ad71578868fb65e26b7e81b19b19"
     },
     "R/data.R": {
       "checksum": "a2c4a289a58109e8768057800c9eac7d"
@@ -4883,34 +4940,37 @@
       "checksum": "846978c089c39a0667fcd899eb964ac1"
     },
     "R/imputation.R": {
-      "checksum": "48ae4304e17a739e8aa6d64b310394a4"
+      "checksum": "4b65ba65e3ae6ab29607024f4092b3c9"
+    },
+    "R/imputeCGM-package.R": {
+      "checksum": "4db49f771e694fceec7f62689b5758cd"
     },
     "R/run_app.R": {
-      "checksum": "4870c8b966b119a94755c47e99c73412"
+      "checksum": "699f856cf6f701623df08bdc8b2d66e8"
     },
     "R/run_bench.R": {
-      "checksum": "cc98dc05abf8e744da4f36988e9bd2e3"
+      "checksum": "b01c4cb275260b1f3a1577d2a681babd"
     },
     "README.md": {
-      "checksum": "0ab6496f603204f7922fe3525d5d616e"
+      "checksum": "d009f7c13a93422e8d68dd42916d93c0"
     },
     "README.Rmd": {
-      "checksum": "19d11188625deed55ae3496afb10a213"
+      "checksum": "a3c1cb27e0ca44ca93721547b6f2e6fb"
     },
     "requirements.txt": {
       "checksum": "4c528a4284270095992b059f3c07978b"
     },
     "tests/testthat.R": {
-      "checksum": "d55fc560d93b7f62b6e615e7edf91f54"
+      "checksum": "94a36a5baf94523137fca5324037370f"
     },
     "tests/testthat/test-runner.R": {
-      "checksum": "a9b1f497b0aace0417f379ca4a79d91e"
+      "checksum": "b22033f33b03eb0d40585e5f36996f96"
     },
     "vignettes/How-To-Use-imputeCGM.Rmd": {
-      "checksum": "678e0d8271c83103add9242da7ff5da7"
+      "checksum": "87c322746c29363fc8d80f602e1ba348"
     },
     "vignettes/Using-the-imputeCGM-Shiny-App.Rmd": {
-      "checksum": "00a626fa75fa27f003fc62bb39436a03"
+      "checksum": "39500005043ccab30843006827b9c12e"
     }
   },
   "users": null

@@ -42,7 +42,7 @@ options(shiny.maxRequestSize = 1024^3)
     lgb_nrounds = lgb_nrounds,
     n_threads = n_threads,
     seed = seed,
-    export = FALSE
+    export_path = NULL
   )
 }
 
@@ -157,8 +157,8 @@ ui <- fluidPage(
 
       numericInput(
         inputId = "seed",
-        label = "Random seed",
-        value = 42,
+        label = "Random seed (optional)",
+        value = NA,
         min = 1,
         step = 1
       ),
@@ -476,7 +476,7 @@ server <- function(input, output, session) {
             knn_k = input$knn_k,
             lgb_nrounds = input$lgb_nrounds,
             n_threads = input$n_threads,
-            seed = input$seed
+            seed = if (is.na(input$seed)) NULL else input$seed
           )
           out <- do.call(run_missing_glucose_imputation, call_args)
 

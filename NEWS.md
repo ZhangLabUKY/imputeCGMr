@@ -10,6 +10,12 @@
 
 * Documentation now points to the new GitHub repository named `imputeCGMR`.
 
+* Addressed CRAN resubmission feedback by quoting software and package names in
+  `DESCRIPTION`, replacing the Shiny app example wrapper with
+  `if (interactive())`, adding Shiny helper test coverage, requiring explicit
+  export paths for CSV writing, and making seed setting opt-in with
+  `seed = NULL` by default.
+
 # imputeCGM 0.0.2
 
 ## Major changes

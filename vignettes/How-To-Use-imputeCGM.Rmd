@@ -403,10 +403,12 @@ to perform the full strict path.
 
 # Exporting results
 
-Set `export = TRUE` to write the returned imputed data frame to a timestamped
-CSV file in the current working directory.
+Set `export_path` to write the returned imputed data frame to an explicit CSV
+file path. The default `export_path = NULL` does not write any files.
 
 ```{r export-example, eval = FALSE}
+export_file <- file.path(tempdir(), "imputed_cgm_data.csv")
+
 out <- run_missing_glucose_imputation(
   CGMExmplDat10Pct,
   target_col = "LBORRES",
@@ -414,7 +416,7 @@ out <- run_missing_glucose_imputation(
   id_col = "USUBJID",
   time_col = "Time",
   imputer_backend = "mice",
-  export = TRUE
+  export_path = export_file
 )
 ```
 

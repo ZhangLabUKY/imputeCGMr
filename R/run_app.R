@@ -9,8 +9,7 @@
 #' @return Invisibly returns the result of [shiny::runApp()].
 #'
 #' @examples
-#' \dontrun{
-#' # Run the imputeCGM Shiny app
+#' if (interactive()) {
 #' run_app()
 #' }
 #'

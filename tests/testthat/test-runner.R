@@ -69,7 +69,8 @@ expect_strict_imputation_output <- function(
       xgb_nrounds = 5,
       rf_n_estimators = 25,
       lgb_nrounds = 25,
-      n_threads = 1L
+      n_threads = 1L,
+      seed = 101L
     )
   )
 }
@@ -267,6 +268,36 @@ test_that("automatic timestamp parsing accepts POSIXct timestamps", {
   expect_equal(sum(is.na(out$LBORRES)), 2L)
 })
 
+test_that("explicit export_path writes only to the requested file", {
+  skip_if_not_installed("data.table")
+  skip_if_not_installed("mice")
+
+  base_time <- as.POSIXct("2020-01-16 00:00:00", tz = "UTC") +
+    seq(0, by = 300, length.out = 24)
+  dat <- .test_imputation_data(base_time)
+  export_file <- tempfile(fileext = ".csv")
+  on.exit(unlink(export_file), add = TRUE)
+
+  out <- .suppress_expected_imputation_warnings(
+    run_missing_glucose_imputation(
+      dat,
+      target_col = "LBORRES",
+      feature_cols = c("AGE", "hba1c"),
+      id_col = "USUBJID",
+      time_col = "Time",
+      imputer_backend = "mice",
+      models = "arima",
+      export_path = export_file,
+      seed = 101L
+    )
+  )
+
+  expect_true(file.exists(export_file))
+  exported <- utils::read.csv(export_file, check.names = FALSE)
+  expect_equal(nrow(exported), nrow(out))
+  expect_true("imputed_glucose_value" %in% names(exported))
+})
+
 test_that("automatic timestamp parsing reports unparseable timestamps", {
   skip_if_not_installed("mice")
   skip_if_not_installed("data.table")
@@ -377,15 +408,7 @@ test_that("Shiny app exposes and maps selectable imputation methods", {
     "app.R",
     package = "imputeCGM"
   )
-  if (identical(app_path, "")) {
-    app_path <- file.path(
-      getwd(),
-      "inst",
-      "shiny",
-      "cgm_imputation_app",
-      "app.R"
-    )
-  }
+  expect_false(identical(app_path, ""))
 
   app_env <- new.env(parent = globalenv())
   source(app_path, local = app_env)
@@ -413,7 +436,7 @@ test_that("Shiny app exposes and maps selectable imputation methods", {
       knn_k = 3,
       lgb_nrounds = 25,
       n_threads = 1L,
-      seed = 42
+      seed = 101L
     )
 
     expect_identical(args$models, model)
@@ -421,6 +444,11 @@ test_that("Shiny app exposes and maps selectable imputation methods", {
     expect_identical(args$knn_k, 3)
     expect_identical(args$lgb_nrounds, 25)
     expect_identical(args$n_threads, 1L)
-    expect_false(args$export)
+    expect_identical(args$seed, 101L)
+    expect_null(args$export_path)
   }
+
+  example_dat <- app_env$.load_example_data("CGMExmplDat5Pct")
+  expect_s3_class(example_dat, "data.frame")
+  expect_true(all(c("USUBJID", "Time", "LBORRES") %in% names(example_dat)))
 })

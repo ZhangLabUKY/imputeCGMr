@@ -38,7 +38,9 @@
 #'   when `models` includes `"lightgbm"` or `"all"`.
 #' @param arima_order Integer vector of length 3 for `forecast::Arima()`. Only
 #'   used when `models` includes `"arima"` or `"all"`.
-#' @param seed Integer seed for masking, MICE, and model reproducibility.
+#' @param seed Optional integer seed for masking, MICE, and model
+#'   reproducibility. The default `NULL` does not set or restore the user's
+#'   random-number generator state.
 #' @param lag_k Integer vector of target lags to compute.
 #' @param add_rollmean Logical: add rolling mean of prior target values.
 #' @param roll_window Integer rolling mean window.
@@ -86,7 +88,7 @@ run_comprehensive_imputation_benchmark <- function(
   xgb_nrounds = 300,
   lgb_nrounds = 400,
   arima_order = c(4L, 1L, 0L),
-  seed = 42,
+  seed = NULL,
   lag_k = c(1, 2, 3),
   add_rollmean = TRUE,
   roll_window = 3,
@@ -96,6 +98,7 @@ run_comprehensive_imputation_benchmark <- function(
 ) {
   mask_type <- match.arg(mask_type)
   selected_models <- .cgmd_normalize_models(models)
+  seed <- .cgmd_normalize_seed(seed)
 
   if (is.character(data) && length(data) == 1L && file.exists(data)) {
     df <- utils::read.csv(data, stringsAsFactors = FALSE)
@@ -234,7 +237,7 @@ run_comprehensive_imputation_benchmark <- function(
 
   for (rate in mask_rates) {
     rate_label <- paste0(as.integer(rate * 100), "%")
-    mask_seed <- seed + as.integer(rate * 100)
+    mask_seed <- if (is.null(seed)) NULL else seed + as.integer(rate * 100)
     mask_pos <- .cgmd_make_mask_pos(
       n = n_total,
       rate = rate,
@@ -259,17 +262,19 @@ run_comprehensive_imputation_benchmark <- function(
     pred_matrix[,] <- 0
     pred_matrix[target_col, setdiff(colnames(imp_df), target_col)] <- 1
 
-    set.seed(seed)
-    imp_obj <- mice::mice(
-      imp_df,
+    mice_args <- list(
+      data = imp_df,
       m = 1,
       maxit = 10,
       method = mice_method,
       predictorMatrix = pred_matrix,
       ridge = 1e-5,
-      printFlag = FALSE,
-      seed = seed
+      printFlag = FALSE
     )
+    if (!is.null(seed)) {
+      mice_args$seed <- seed
+    }
+    imp_obj <- .cgmd_with_seed(seed, do.call(mice::mice, mice_args))
     imp_mat <- mice::complete(imp_obj, 1)
     y_imp <- as.numeric(imp_mat[[target_col]])
     if (any(!is.finite(y_imp))) {
@@ -339,7 +344,7 @@ run_comprehensive_imputation_benchmark <- function(
     }
 
     if ("rf" %in% selected_models) {
-      rf_model <- ranger::ranger(
+      rf_args <- list(
         x = X_train,
         y = y_train,
         num.trees = rf_n_estimators,
@@ -347,9 +352,12 @@ run_comprehensive_imputation_benchmark <- function(
         min.node.size = 1,
         replace = TRUE,
         sample.fraction = 1.0,
-        seed = seed,
         num.threads = 1
       )
+      if (!is.null(seed)) {
+        rf_args$seed <- seed
+      }
+      rf_model <- .cgmd_with_seed(seed, do.call(ranger::ranger, rf_args))
       y_rf <- stats::predict(rf_model, data = X_test)$predictions
       p_rf <- y_true_full
       p_rf[test_idx] <- y_rf
@@ -417,19 +425,22 @@ run_comprehensive_imputation_benchmark <- function(
     }
 
     if ("xgboost" %in% selected_models) {
+      xgb_params <- list(
+        objective = "reg:squarederror",
+        eta = 0.05,
+        max_depth = 6,
+        subsample = 0.8,
+        colsample_bytree = 0.8,
+        lambda = 1.0,
+        eval_metric = "rmse",
+        nthread = -1
+      )
+      if (!is.null(seed)) {
+        xgb_params$seed <- seed
+      }
       dtrain <- xgboost::xgb.DMatrix(data = X_train, label = y_train)
       xgb_model <- xgboost::xgb.train(
-        params = list(
-          objective = "reg:squarederror",
-          eta = 0.05,
-          max_depth = 6,
-          subsample = 0.8,
-          colsample_bytree = 0.8,
-          lambda = 1.0,
-          eval_metric = "rmse",
-          nthread = -1,
-          seed = seed
-        ),
+        params = xgb_params,
         data = dtrain,
         nrounds = xgb_nrounds,
         verbose = 0
@@ -465,17 +476,20 @@ run_comprehensive_imputation_benchmark <- function(
     }
 
     if ("lightgbm" %in% selected_models) {
+      lgb_params <- list(
+        objective = "regression",
+        learning_rate = 0.05,
+        num_leaves = 31L,
+        bagging_fraction = 0.8,
+        feature_fraction = 0.8,
+        verbose = -1
+      )
+      if (!is.null(seed)) {
+        lgb_params$seed <- seed
+      }
       lgb_train <- lightgbm::lgb.Dataset(data = X_train, label = y_train)
       lgb_model <- lightgbm::lgb.train(
-        params = list(
-          objective = "regression",
-          learning_rate = 0.05,
-          num_leaves = 31L,
-          bagging_fraction = 0.8,
-          feature_fraction = 0.8,
-          seed = seed,
-          verbose = -1
-        ),
+        params = lgb_params,
         data = lgb_train,
         nrounds = lgb_nrounds
       )
@@ -603,8 +617,9 @@ run_comprehensive_imputation_benchmark <- function(
 #'   LightGBM runs. ARIMA and kNN do not use this setting.
 #' @param arima_order Integer vector of length 3. Python default is
 #'   `c(4L, 1L, 0L)`.
-#' @param seed Integer seed for reproducible MICE, tree-based models, and the
-#'   Python-compatible backend. Default is 42.
+#' @param seed Optional integer seed for reproducible MICE, tree-based models,
+#'   and the Python-compatible backend. The default `NULL` leaves the user's
+#'   random-number generator state uncontrolled.
 #' @param lag_k Integer vector of target lags to compute. Python default is
 #'   `c(1L, 2L, 3L)`.
 #' @param add_rollmean Logical: add rolling mean of prior target values. Python
@@ -631,8 +646,9 @@ run_comprehensive_imputation_benchmark <- function(
 #' @param imputer_backend One of `"mice"` or `"sklearn"`. `"mice"` uses the
 #'   R package `mice` as the CRAN-safe R-native backend. `"sklearn"` uses
 #'   Python modules through `reticulate` for a Python-compatible workflow.
-#' @param export Logical; if `TRUE`, writes the returned imputed data frame to a
-#'   timestamped CSV file in the current working directory. Default is `FALSE`.
+#' @param export_path Optional single file path. If supplied, the returned
+#'   imputed data frame is also written to this CSV file. The default `NULL`
+#'   does not write any files.
 #'
 #' @return A data.frame containing the original user-supplied columns plus
 #'   `imputed_glucose_value`, the completed glucose column. The original target
@@ -697,7 +713,7 @@ run_missing_glucose_imputation <- function(
   lgb_nrounds = 400,
   n_threads = 1L,
   arima_order = c(4L, 1L, 0L),
-  seed = 42,
+  seed = NULL,
   lag_k = c(1L, 2L, 3L),
   add_rollmean = TRUE,
   roll_window = 3L,
@@ -708,9 +724,11 @@ run_missing_glucose_imputation <- function(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  export = FALSE
+  export_path = NULL
 ) {
   imputer_backend <- match.arg(imputer_backend)
+  seed <- .cgmd_normalize_seed(seed)
+  export_path <- .cgmd_normalize_export_path(export_path)
 
   if (!is.character(target_col) || length(target_col) != 1L) {
     stop("target_col must be a single character string.")
@@ -836,7 +854,7 @@ run_missing_glucose_imputation <- function(
       original_cols = original_output_cols
     )
 
-    result <- .cgmd_py_export_if_requested(result, export)
+    result <- .cgmd_py_export_if_requested(result, export_path)
     return(result)
   }
 
@@ -922,20 +940,64 @@ run_missing_glucose_imputation <- function(
     original_cols = original_output_cols
   )
 
-  result <- .cgmd_py_export_if_requested(result, export)
+  result <- .cgmd_py_export_if_requested(result, export_path)
   result
 }
 
-.cgmd_py_export_if_requested <- function(out, export = FALSE) {
-  if (isTRUE(export)) {
-    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    filename <- paste0("imputed_cgm_data_", timestamp, ".csv")
-    if (requireNamespace("data.table", quietly = TRUE)) {
-      data.table::fwrite(out, file = filename)
-    } else {
-      utils::write.csv(out, file = filename, row.names = FALSE)
+.cgmd_normalize_seed <- function(seed) {
+  if (is.null(seed)) {
+    return(NULL)
+  }
+  if (length(seed) != 1L || is.na(seed) || !is.finite(seed)) {
+    stop("seed must be NULL or a single finite integer.", call. = FALSE)
+  }
+  as.integer(seed)
+}
+
+.cgmd_with_seed <- function(seed, expr) {
+  seed <- .cgmd_normalize_seed(seed)
+  if (is.null(seed)) {
+    return(force(expr))
+  }
+
+  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (had_seed) {
+    old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  }
+  on.exit({
+    if (had_seed) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
     }
-    message("Imputed data has been exported to: ", filename)
+  }, add = TRUE)
+
+  set.seed(seed)
+  force(expr)
+}
+
+.cgmd_normalize_export_path <- function(export_path) {
+  if (is.null(export_path)) {
+    return(NULL)
+  }
+  if (!is.character(export_path) || length(export_path) != 1L) {
+    stop("export_path must be NULL or a single file path.", call. = FALSE)
+  }
+  export_path <- trimws(export_path)
+  if (identical(export_path, "") || is.na(export_path)) {
+    stop("export_path must be NULL or a non-empty file path.", call. = FALSE)
+  }
+  export_path
+}
+
+.cgmd_py_export_if_requested <- function(out, export_path = NULL) {
+  if (!is.null(export_path)) {
+    if (requireNamespace("data.table", quietly = TRUE)) {
+      data.table::fwrite(out, file = export_path)
+    } else {
+      utils::write.csv(out, file = export_path, row.names = FALSE)
+    }
+    message("Imputed data has been exported to: ", export_path)
   }
   out
 }
@@ -1103,7 +1165,7 @@ run_missing_glucose_imputation <- function(
       "                continue",
       "    return pred_full",
       "",
-      "def _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=42, nrounds=300, n_threads=1):",
+      "def _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=None, nrounds=300, n_threads=1):",
       "    if X_missing.shape[0] == 0:",
       "        return np.asarray([], dtype=float)",
       "    model = xgb.XGBRegressor(",
@@ -1114,14 +1176,14 @@ run_missing_glucose_imputation <- function(
       "        colsample_bytree=0.8,",
       "        reg_lambda=1.0,",
       "        n_jobs=int(n_threads),",
-      "        random_state=int(seed),",
+      "        random_state=None if seed is None else int(seed),",
       "        tree_method='hist',",
       "        eval_metric='rmse',",
       "    )",
       "    model.fit(X_train, y_train, verbose=False)",
       "    return model.predict(X_missing)",
       "",
-      "def _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=42, n_estimators=200, n_threads=1):",
+      "def _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=None, n_estimators=200, n_threads=1):",
       "    if X_missing.shape[0] == 0:",
       "        return np.asarray([], dtype=float)",
       "    model = RandomForestRegressor(",
@@ -1129,7 +1191,7 @@ run_missing_glucose_imputation <- function(
       "        max_features=1.0,",
       "        min_samples_leaf=1,",
       "        bootstrap=True,",
-      "        random_state=int(seed),",
+      "        random_state=None if seed is None else int(seed),",
       "        n_jobs=int(n_threads),",
       "    )",
       "    model.fit(X_train, y_train)",
@@ -1146,7 +1208,7 @@ run_missing_glucose_imputation <- function(
       "    model.fit(X_train_sc, y_train)",
       "    return model.predict(X_missing_sc)",
       "",
-      "def _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=42, nrounds=400, n_threads=1):",
+      "def _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=None, nrounds=400, n_threads=1):",
       "    if X_missing.shape[0] == 0:",
       "        return np.asarray([], dtype=float)",
       "    try:",
@@ -1160,7 +1222,7 @@ run_missing_glucose_imputation <- function(
       "        num_leaves=31,",
       "        subsample=0.8,",
       "        colsample_bytree=0.8,",
-      "        random_state=int(seed),",
+      "        random_state=None if seed is None else int(seed),",
       "        n_jobs=int(n_threads),",
       "        verbosity=-1,",
       "    )",
@@ -1188,7 +1250,7 @@ run_missing_glucose_imputation <- function(
       "        drop_cols.append('rollmean')",
       "    return df.drop(columns=list(dict.fromkeys(drop_cols)), errors='ignore')",
       "",
-      "def cgmd_r_run_python_engine(r_df, timestamp_col='timestamp', subjectid_col='subjectid', glucose_col='glucose_value', feature_cols=None, interval_minutes=5, use_arima_if_missing_leq=0.05, seed=42, lag_k=(1,2,3), roll_window=3, add_rollmean=True, arima_order=(4,1,0), arima_min_history=20, xgb_nrounds=300, rf_n_estimators=200, knn_k=7, lgb_nrounds=400, n_threads=1, models='auto', drop_internal_cols=True):",
+      "def cgmd_r_run_python_engine(r_df, timestamp_col='timestamp', subjectid_col='subjectid', glucose_col='glucose_value', feature_cols=None, interval_minutes=5, use_arima_if_missing_leq=0.05, seed=None, lag_k=(1,2,3), roll_window=3, add_rollmean=True, arima_order=(4,1,0), arima_min_history=20, xgb_nrounds=300, rf_n_estimators=200, knn_k=7, lgb_nrounds=400, n_threads=1, models='auto', drop_internal_cols=True):",
       "    out = pd.DataFrame(r_df).copy()",
       "    out = _cgmd_add_timeseries_column(out, ts_col=timestamp_col, id_col=subjectid_col, interval_minutes=interval_minutes)",
       "    out = _cgmd_encode_sex(out, 'SEX')",
@@ -1209,7 +1271,7 @@ run_missing_glucose_imputation <- function(
       "    mask_pos = out[glucose_col].isna().to_numpy()",
       "    miss_rate = float(mask_pos.mean())",
       "    imp_df = out[[glucose_col] + selected_feature_cols].copy()",
-      "    imp_mat = IterativeImputer(random_state=int(seed), max_iter=10).fit_transform(imp_df.to_numpy(dtype=float))",
+      "    imp_mat = IterativeImputer(random_state=None if seed is None else int(seed), max_iter=10).fit_transform(imp_df.to_numpy(dtype=float))",
       "    y_mice_full = imp_mat[:, 0]",
       "    X_imp = imp_mat[:, 1:]",
       "    y_final = np.asarray(y_mice_full, dtype=float).copy()",
@@ -1258,7 +1320,7 @@ run_missing_glucose_imputation <- function(
   feature_cols = NULL,
   interval_minutes = 5L,
   use_arima_if_missing_leq = 0.05,
-  seed = 42L,
+  seed = NULL,
   lag_k = c(1L, 2L, 3L),
   roll_window = 3L,
   add_rollmean = TRUE,
@@ -1272,6 +1334,7 @@ run_missing_glucose_imputation <- function(
   models = "auto",
   drop_internal_cols = TRUE
 ) {
+  seed <- .cgmd_normalize_seed(seed)
   .cgmd_py_define_python_engine()
 
   py_df <- reticulate::r_to_py(as.data.frame(df, stringsAsFactors = FALSE))
@@ -1285,7 +1348,7 @@ run_missing_glucose_imputation <- function(
     feature_cols = py_feature_cols,
     interval_minutes = as.integer(interval_minutes),
     use_arima_if_missing_leq = as.numeric(use_arima_if_missing_leq),
-    seed = as.integer(seed),
+    seed = seed,
     lag_k = as.list(as.integer(lag_k)),
     roll_window = as.integer(roll_window),
     add_rollmean = isTRUE(add_rollmean),
@@ -1815,7 +1878,7 @@ run_missing_glucose_imputation <- function(
   target_col = "glucose_value",
   feature_cols = NULL,
   use_arima_if_missing_leq = 0.05,
-  seed = 42L,
+  seed = NULL,
   imputer_backend = c("mice"),
   arima_order = c(4L, 1L, 0L),
   arima_min_history = 20L,
@@ -2124,6 +2187,7 @@ run_missing_glucose_imputation <- function(
 }
 
 .cgmd_py_mice_imputer <- function(mat, seed, max_iter = 10L) {
+  seed <- .cgmd_normalize_seed(seed)
   if (!requireNamespace("mice", quietly = TRUE)) {
     stop(
       "Package 'mice' is required for imputer_backend = 'mice'.",
@@ -2147,15 +2211,17 @@ run_missing_glucose_imputation <- function(
   has_missing <- vapply(dat, function(x) any(is.na(x)), logical(1))
   method[has_missing] <- "norm"
 
-  set.seed(seed)
-  imp <- mice::mice(
-    dat,
+  mice_args <- list(
+    data = dat,
     m = 1L,
     maxit = as.integer(max_iter),
     method = method,
-    printFlag = FALSE,
-    seed = as.integer(seed)
+    printFlag = FALSE
   )
+  if (!is.null(seed)) {
+    mice_args$seed <- seed
+  }
+  imp <- .cgmd_with_seed(seed, do.call(mice::mice, mice_args))
   out <- as.matrix(mice::complete(imp, 1L))
   storage.mode(out) <- "double"
   out
@@ -2247,7 +2313,7 @@ run_missing_glucose_imputation <- function(
   X_train,
   y_train,
   X_missing,
-  seed = 42L,
+  seed = NULL,
   nrounds = 300L,
   n_threads = 1L
 ) {
@@ -2266,12 +2332,13 @@ run_missing_glucose_imputation <- function(
     colsample_bytree = 0.8,
     lambda = 1.0,
     nthread = as.integer(n_threads),
-    seed = as.integer(seed),
     tree_method = "hist",
     eval_metric = "rmse"
   )
+  if (!is.null(seed)) {
+    params$seed <- seed
+  }
 
-  set.seed(seed)
   dtrain <- xgboost::xgb.DMatrix(data = X_train, label = y_train)
   model <- xgboost::xgb.train(
     params = params,
@@ -2286,7 +2353,7 @@ run_missing_glucose_imputation <- function(
   X_train,
   y_train,
   X_missing,
-  seed = 42L,
+  seed = NULL,
   n_estimators = 200L,
   n_threads = 1L
 ) {
@@ -2306,8 +2373,7 @@ run_missing_glucose_imputation <- function(
   .cgmd_assert_all_finite_matrix(X_train, "X_train")
   .cgmd_assert_all_finite_matrix(X_missing, "X_missing")
 
-  set.seed(seed)
-  rf_model <- ranger::ranger(
+  rf_args <- list(
     x = X_train,
     y = y_train,
     num.trees = as.integer(n_estimators),
@@ -2315,9 +2381,12 @@ run_missing_glucose_imputation <- function(
     min.node.size = 1L,
     replace = TRUE,
     sample.fraction = 1.0,
-    seed = as.integer(seed),
     num.threads = as.integer(n_threads)
   )
+  if (!is.null(seed)) {
+    rf_args$seed <- seed
+  }
+  rf_model <- .cgmd_with_seed(seed, do.call(ranger::ranger, rf_args))
   as.numeric(stats::predict(rf_model, data = X_missing)$predictions)
 }
 
@@ -2364,10 +2433,11 @@ run_missing_glucose_imputation <- function(
   X_train,
   y_train,
   X_missing,
-  seed = 42L,
+  seed = NULL,
   nrounds = 400L,
   n_threads = 1L
 ) {
+  seed <- .cgmd_normalize_seed(seed)
   if (nrow(X_missing) == 0L) {
     return(numeric(0))
   }
@@ -2384,19 +2454,21 @@ run_missing_glucose_imputation <- function(
   .cgmd_assert_all_finite_matrix(X_train, "X_train")
   .cgmd_assert_all_finite_matrix(X_missing, "X_missing")
 
-  set.seed(seed)
+  lgb_params <- list(
+    objective = "regression",
+    learning_rate = 0.05,
+    num_leaves = 31L,
+    bagging_fraction = 0.8,
+    feature_fraction = 0.8,
+    num_threads = as.integer(n_threads),
+    verbose = -1L
+  )
+  if (!is.null(seed)) {
+    lgb_params$seed <- seed
+  }
   lgb_train <- lightgbm::lgb.Dataset(data = X_train, label = y_train)
   lgb_model <- lightgbm::lgb.train(
-    params = list(
-      objective = "regression",
-      learning_rate = 0.05,
-      num_leaves = 31L,
-      bagging_fraction = 0.8,
-      feature_fraction = 0.8,
-      num_threads = as.integer(n_threads),
-      seed = as.integer(seed),
-      verbose = -1L
-    ),
+    params = lgb_params,
     data = lgb_train,
     nrounds = as.integer(nrounds)
   )
@@ -2809,22 +2881,22 @@ run_missing_glucose_imputation <- function(
     stop("Mask size >= number of rows; reduce mask rate or provide more rows.")
   }
 
-  set.seed(seed)
-
-  if (mask_type == "random") {
-    idx <- sample.int(n, size = n_mask, replace = FALSE)
-  } else if (mask_type == "block") {
-    start <- sample.int(n - n_mask + 1L, size = 1L)
-    idx <- start:(start + n_mask - 1L)
-  } else {
-    idx <- .cgmd_gap_block_indices(
-      n = n,
-      n_mask = n_mask,
-      gap_bins = gap_bins,
-      gap_probs = gap_probs,
-      open_cap = open_cap
-    )
-  }
+  idx <- .cgmd_with_seed(seed, {
+    if (mask_type == "random") {
+      sample.int(n, size = n_mask, replace = FALSE)
+    } else if (mask_type == "block") {
+      start <- sample.int(n - n_mask + 1L, size = 1L)
+      start:(start + n_mask - 1L)
+    } else {
+      .cgmd_gap_block_indices(
+        n = n,
+        n_mask = n_mask,
+        gap_bins = gap_bins,
+        gap_probs = gap_probs,
+        open_cap = open_cap
+      )
+    }
+  })
 
   mask_pos <- rep(FALSE, n)
   mask_pos[idx] <- TRUE

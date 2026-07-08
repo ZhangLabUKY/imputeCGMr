@@ -22,7 +22,8 @@
 #' @param mask_type One of `"random"` or `"block"`.
 #' @param rf_n_estimators Integer: number of trees for random forest (default 400).
 #' @param knn_k Integer: number of neighbors for kNN (default 7).
-#' @param seed Integer: random seed used for MICE and models (default 42).
+#' @param seed Optional integer seed used for masking, MICE, and models.
+#'   The default `NULL` does not set the user's random-number generator state.
 #' @param lag_k Integer vector of lags to compute on the target (default c(1,2,3)).
 #' @param add_rollmean Logical: add rolling mean feature of prior target values (default TRUE).
 #' @param roll_window Integer: rolling window length for rollmean (default 3).
@@ -50,11 +51,12 @@ run_missingness_benchmark <- function(
   mask_type = c("random", "block"),
   rf_n_estimators = 400,
   knn_k = 7,
-  seed = 42,
+  seed = NULL,
   lag_k = c(1, 2, 3),
   add_rollmean = TRUE,
   roll_window = 3
 ) {
+  seed <- .cgmd_normalize_seed(seed)
   lifecycle::deprecate_warn(
     "0.0.1.9000",
     "run_missingness_benchmark()",
@@ -212,19 +214,19 @@ run_missingness_benchmark <- function(
   ) {
     type <- match.arg(type)
     n_mask <- as.integer(ceiling(rate * n))
-    set.seed(seed)
-
-    if (type == "random") {
-      idx <- sample.int(n, size = n_mask, replace = FALSE)
-    } else {
-      if (n_mask >= n) {
-        stop("Block size >= n; reduce rate or n.")
+    idx <- .cgmd_with_seed(seed, {
+      if (type == "random") {
+        sample.int(n, size = n_mask, replace = FALSE)
+      } else {
+        if (n_mask >= n) {
+          stop("Block size >= n; reduce rate or n.")
+        }
+        if (is.null(block_start)) {
+          block_start <- sample.int(n - n_mask + 1L, 1L)
+        }
+        block_start:(block_start + n_mask - 1L)
       }
-      if (is.null(block_start)) {
-        block_start <- sample.int(n - n_mask + 1L, 1L)
-      }
-      idx <- block_start:(block_start + n_mask - 1L)
-    }
+    })
 
     mask_pos <- rep(FALSE, n)
     mask_pos[idx] <- TRUE
@@ -255,11 +257,9 @@ run_missingness_benchmark <- function(
     }
     rate_label <- paste0(as.integer(rate * 100), "%")
 
-    # Python-style seed for selecting masked rows
-    set.seed(2024 + as.integer(rate * 100))
     mask_type_1 <- match.arg(mask_type) # optional but recommended
 
-    seed_mask <- 2024 + as.integer(rate * 100)
+    seed_mask <- if (is.null(seed)) NULL else seed + as.integer(rate * 100)
     mask_pos <- make_mask_pos(
       n = n,
       rate = rate,
@@ -272,15 +272,18 @@ run_missingness_benchmark <- function(
     imp_df[[target_col]][mask_pos] <- NA_real_
 
     # --- MICE impute all columns (target + features) ---
-    imp <- mice::mice(
-      imp_df,
+    mice_args <- list(
+      data = imp_df,
       m = 1,
       maxit = 10,
       method = "norm",
       ridge = 1e-5,
-      printFlag = FALSE,
-      seed = seed
+      printFlag = FALSE
     )
+    if (!is.null(seed)) {
+      mice_args$seed <- seed
+    }
+    imp <- .cgmd_with_seed(seed, do.call(mice::mice, mice_args))
     completed <- mice::complete(imp, 1)
 
     y_imp <- completed[[target_col]]
@@ -311,7 +314,7 @@ run_missingness_benchmark <- function(
 
     # (2) Random Forest (ranger)
     rf_data <- data.frame(y_target = y_train, X_train)
-    rf_model <- ranger::ranger(
+    rf_args <- list(
       y_target ~ .,
       data = rf_data,
       num.trees = rf_n_estimators,
@@ -319,9 +322,12 @@ run_missingness_benchmark <- function(
       min.node.size = 1,
       replace = TRUE,
       sample.fraction = 1,
-      seed = seed,
       num.threads = 1
     )
+    if (!is.null(seed)) {
+      rf_args$seed <- seed
+    }
+    rf_model <- .cgmd_with_seed(seed, do.call(ranger::ranger, rf_args))
     y_rf <- stats::predict(rf_model, data = as.data.frame(X_test))$predictions
 
     results_list[[length(results_list) + 1L]] <- data.frame(

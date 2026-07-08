@@ -11,16 +11,18 @@ Description: Imputes missing glucose values in repeated-measures continuous
     glucose monitoring (CGM) data. Workflows create time-series features from
     raw timestamps, support model selection, and return the user's original
     columns plus an imputed glucose column. Methods include multiple imputation
-    by chained equations (MICE; Azur et al. (2011) <doi:10.1002/mpr.329>),
-    Random Forest regression (Breiman (2001) <doi:10.1023/A:1010933404324>),
-    k-nearest-neighbor regression (Zhang (2016) <doi:10.21037/atm.2016.03.37>),
-    XGBoost (Chen and Guestrin (2016) <doi:10.1145/2939672.2939785>),
-    LightGBM (Ke et al. (2017)
+    by chained equations using 'mice' (Azur et al. (2011)
+    <doi:10.1002/mpr.329>), Random Forest regression using 'ranger'
+    (Breiman (2001) <doi:10.1023/A:1010933404324>),
+    k-nearest-neighbor regression using 'FNN' (Zhang (2016)
+    <doi:10.21037/atm.2016.03.37>), 'XGBoost' using 'xgboost' (Chen and
+    Guestrin (2016) <doi:10.1145/2939672.2939785>), 'LightGBM' using
+    'lightgbm' (Ke et al. (2017)
     <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision>),
-    and ARIMA forecasting with the forecast framework (Hyndman and Khandakar
-    (2008) <doi:10.18637/jss.v027.i03>). A Python-compatible backend uses
-    'reticulate' to call 'pandas', 'scikit-learn', 'statsmodels', Python
-    'xgboost', and optional Python 'lightgbm'.
+    and ARIMA forecasting using 'forecast' (Hyndman and Khandakar (2008)
+    <doi:10.18637/jss.v027.i03>). A 'Python'-compatible backend uses
+    'reticulate' to call 'pandas', 'scikit-learn', 'statsmodels', 'xgboost',
+    and optional 'lightgbm'.
 License: GPL (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
