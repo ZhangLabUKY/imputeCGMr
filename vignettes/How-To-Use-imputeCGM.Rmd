@@ -67,7 +67,7 @@ Install the development version with:
 
 ```r
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/imputeCGMR")
+devtools::install_github("ZhangLabUKY/imputeCGMr")
 ```
 
 Load the package:

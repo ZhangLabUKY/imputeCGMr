@@ -48,7 +48,7 @@ Suggests:
 Config/testthat/edition: 3
 NeedsCompilation: no
 Language: en-US
-URL: https://zhanglabuky.github.io/imputeCGMR/, https://github.com/ZhangLabUKY/imputeCGMR
-BugReports: https://github.com/ZhangLabUKY/imputeCGMR/issues
+URL: https://zhanglabuky.github.io/imputeCGMr/, https://github.com/ZhangLabUKY/imputeCGMr
+BugReports: https://github.com/ZhangLabUKY/imputeCGMr/issues
 LazyData: true
 VignetteBuilder: knitr

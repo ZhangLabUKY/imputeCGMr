@@ -14,9 +14,9 @@ data sets for glucose values that are already missing in user data.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://zhanglabuky.github.io/imputeCGMR/}
-  \item \url{https://github.com/ZhangLabUKY/imputeCGMR}
-  \item Report bugs at \url{https://github.com/ZhangLabUKY/imputeCGMR/issues}
+  \item \url{https://zhanglabuky.github.io/imputeCGMr/}
+  \item \url{https://github.com/ZhangLabUKY/imputeCGMr}
+  \item Report bugs at \url{https://github.com/ZhangLabUKY/imputeCGMr/issues}
 }
 
 }

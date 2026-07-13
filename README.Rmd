@@ -16,9 +16,9 @@ knitr::opts_chunk$set(
 # imputeCGM
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/ZhangLabUKY/imputeCGMR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ZhangLabUKY/imputeCGMR/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/ZhangLabUKY/imputeCGMr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ZhangLabUKY/imputeCGMr/actions/workflows/R-CMD-check.yaml)
 [![Last Commit
-Release](https://img.shields.io/github/last-commit/ZhangLabUKY/imputeCGMR/master)](https://github.com/ZhangLabUKY/imputeCGMR/commits/master/)
+Release](https://img.shields.io/github/last-commit/ZhangLabUKY/imputeCGMr/master)](https://github.com/ZhangLabUKY/imputeCGMr/commits/master/)
 <!-- badges: end -->
 
 ## Installation
@@ -33,7 +33,7 @@ Or install the development version from GitHub:
 
 ```r
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/imputeCGMR")
+devtools::install_github("ZhangLabUKY/imputeCGMr")
 ```
 
 imputeCGM imputes missing glucose values in continuous glucose monitoring
@@ -227,14 +227,14 @@ The main vignette contains a detailed walkthrough of data requirements, timestam
 regularization, return columns, backend selection, optional Python setup, and
 troubleshooting:
 
-<https://zhanglabuky.github.io/imputeCGMR/articles/How-To-Use-imputeCGM.html>
+<https://zhanglabuky.github.io/imputeCGMr/articles/How-To-Use-imputeCGM.html>
 
 A separate Shiny app vignette walks through the interactive interface:
 
-<https://zhanglabuky.github.io/imputeCGMR/articles/Using-the-imputeCGM-Shiny-App.html>
+<https://zhanglabuky.github.io/imputeCGMr/articles/Using-the-imputeCGM-Shiny-App.html>
 
 ## Changelog
 
 The changelog is available at:
 
-<https://zhanglabuky.github.io/imputeCGMR/news/index.html>
+<https://zhanglabuky.github.io/imputeCGMr/news/index.html>

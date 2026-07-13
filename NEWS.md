@@ -8,7 +8,7 @@
   vignette names, manual pages, tests, and Shiny app package references for the
   new `imputeCGM` package identity.
 
-* Documentation now points to the new GitHub repository named `imputeCGMR`.
+* Documentation now points to the new GitHub repository named `imputeCGMr`.
 
 * Addressed CRAN resubmission feedback by quoting software and package names in
   `DESCRIPTION`, replacing the Shiny app example wrapper with
