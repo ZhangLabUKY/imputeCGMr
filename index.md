@@ -14,7 +14,7 @@ Or install the development version from GitHub:
 ``` r
 
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/imputeCGMR")
+devtools::install_github("ZhangLabUKY/imputeCGMr")
 ```
 
 imputeCGM imputes missing glucose values in continuous glucose
@@ -34,7 +34,7 @@ original glucose column unchanged.
 
 ## What the imputation workflow does
 
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMR/reference/run_missing_glucose_imputation.md)
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMr/reference/run_missing_glucose_imputation.md)
 performs the following steps:
 
 1.  reads a data frame or CSV file;
@@ -164,7 +164,7 @@ imputeCGM also includes a small Shiny app for users who prefer an
 interactive workflow. The app lets users upload a CSV file or load one
 of the built-in example data sets, choose the target glucose, subject
 ID, timestamp, and feature columns, run
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMR/reference/run_missing_glucose_imputation.md),
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMr/reference/run_missing_glucose_imputation.md),
 preview rows with missing glucose values that were imputed, and download
 the completed data as a CSV file.
 
@@ -195,7 +195,7 @@ install.packages("shiny")
 
 For package developers, the app is stored under
 `inst/shiny/cgm_imputation_app/` and is launched through the exported
-[`run_app()`](https://zhanglabuky.github.io/imputeCGMR/reference/run_app.md)
+[`run_app()`](https://zhanglabuky.github.io/imputeCGMr/reference/run_app.md)
 helper.
 
 ## Optional Python-compatible backend
@@ -227,14 +227,14 @@ The main vignette contains a detailed walkthrough of data requirements,
 timestamp regularization, return columns, backend selection, optional
 Python setup, and troubleshooting:
 
-<https://zhanglabuky.github.io/imputeCGMR/articles/How-To-Use-imputeCGM.html>
+<https://zhanglabuky.github.io/imputeCGMr/articles/How-To-Use-imputeCGM.html>
 
 A separate Shiny app vignette walks through the interactive interface:
 
-<https://zhanglabuky.github.io/imputeCGMR/articles/Using-the-imputeCGM-Shiny-App.html>
+<https://zhanglabuky.github.io/imputeCGMr/articles/Using-the-imputeCGM-Shiny-App.html>
 
 ## Changelog
 
 The changelog is available at:
 
-<https://zhanglabuky.github.io/imputeCGMR/news/index.html>
+<https://zhanglabuky.github.io/imputeCGMr/news/index.html>

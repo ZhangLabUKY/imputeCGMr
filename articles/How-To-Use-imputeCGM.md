@@ -56,7 +56,7 @@ Install the development version with:
 ``` r
 
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/imputeCGMR")
+devtools::install_github("ZhangLabUKY/imputeCGMr")
 ```
 
 Load the package:
@@ -572,9 +572,9 @@ utils::sessionInfo()
 #> [41] nloptr_2.2.1      minqa_1.2.8       dplyr_1.2.1       ranger_0.18.0    
 #> [45] boot_1.3-32       broom_1.0.13      rpart_4.1.27      vctrs_0.7.3      
 #> [49] R6_2.6.1          lifecycle_1.0.5   fs_2.1.0          MASS_7.3-65      
-#> [53] ragg_1.5.2        pkgconfig_2.0.3   desc_1.4.3        pkgdown_2.2.0    
+#> [53] ragg_1.5.2        pkgconfig_2.0.3   desc_1.4.3        pkgdown_2.2.1    
 #> [57] pillar_1.11.1     bslib_0.11.0      data.table_1.18.4 glue_1.8.1       
-#> [61] Rcpp_1.1.2        systemfonts_1.3.2 xfun_0.59         tibble_3.3.1     
+#> [61] Rcpp_1.1.2        systemfonts_1.3.2 xfun_0.60         tibble_3.3.1     
 #> [65] tidyselect_1.2.1  knitr_1.51        nlme_3.1-169      htmltools_0.5.9  
 #> [69] rmarkdown_2.31    compiler_4.6.1
 ```

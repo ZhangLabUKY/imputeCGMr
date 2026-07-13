@@ -9,11 +9,11 @@ data sets for glucose values that are already missing in user data.
 
 Useful links:
 
-- <https://zhanglabuky.github.io/imputeCGMR/>
+- <https://zhanglabuky.github.io/imputeCGMr/>
 
-- <https://github.com/ZhangLabUKY/imputeCGMR>
+- <https://github.com/ZhangLabUKY/imputeCGMr>
 
-- Report bugs at <https://github.com/ZhangLabUKY/imputeCGMR/issues>
+- Report bugs at <https://github.com/ZhangLabUKY/imputeCGMr/issues>
 
 ## Author
 
