@@ -6,6 +6,11 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/ZhangLabUKY/imputeCGMr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ZhangLabUKY/imputeCGMr/actions/workflows/R-CMD-check.yaml)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/imputeCGM)](https://CRAN.R-project.org/package=imputeCGM)
+[![CRAN
+checks](https://badges.cranchecks.info/summary/imputeCGM.svg)](https://cran.r-project.org/web/checks/check_results_imputeCGM.html)
+[![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/imputeCGM)](https://cran.r-project.org/package=imputeCGM)
 [![Last Commit
 Release](https://img.shields.io/github/last-commit/ZhangLabUKY/imputeCGMr/master)](https://github.com/ZhangLabUKY/imputeCGMr/commits/master/)
 <!-- badges: end -->
