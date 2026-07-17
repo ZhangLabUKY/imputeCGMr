@@ -24,7 +24,7 @@ The app is useful when users want to:
 
 The Shiny app does not implement a separate imputation algorithm. It
 calls
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMR/reference/run_missing_glucose_imputation.md)
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMr/reference/run_missing_glucose_imputation.md)
 internally and returns the same type of completed data frame as the
 command-line workflow.
 
@@ -88,7 +88,7 @@ system.file(
 ```
 
 Users normally do not need to access this directory directly. The
-[`run_app()`](https://zhanglabuky.github.io/imputeCGMR/reference/run_app.md)
+[`run_app()`](https://zhanglabuky.github.io/imputeCGMr/reference/run_app.md)
 launcher finds it automatically.
 
 ## Input options
@@ -227,7 +227,7 @@ data when there are timestamp gaps.
 ## Backend selection
 
 The app supports the same backends as
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMR/reference/run_missing_glucose_imputation.md).
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMr/reference/run_missing_glucose_imputation.md).
 
 | Backend | Description | Recommended use |
 |----|----|----|
@@ -249,7 +249,7 @@ users. It is also the backend used in CRAN-safe examples and tests.
 ## Method selection
 
 The **Final imputation method** control mirrors the `models` argument in
-[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMR/reference/run_missing_glucose_imputation.md).
+[`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMr/reference/run_missing_glucose_imputation.md).
 The default **Automatic by missing rate** option uses `MICE+ARIMA` when
 missingness is at or below the selected threshold and `MICE+XGBoost`
 otherwise.

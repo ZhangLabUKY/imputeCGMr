@@ -56,7 +56,7 @@ Install the development version with:
 ``` r
 
 install.packages("devtools")
-devtools::install_github("ZhangLabUKY/imputeCGMR")
+devtools::install_github("ZhangLabUKY/imputeCGMr")
 ```
 
 Load the package:
@@ -560,7 +560,7 @@ utils::sessionInfo()
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] sass_0.4.10       generics_0.1.4    tidyr_1.3.2       CGManalyzer_1.3.1
-#>  [5] shape_1.4.6.1     lattice_0.22-9    lme4_2.0-1        digest_0.6.39    
+#>  [5] shape_1.4.6.1     lattice_0.22-9    lme4_2.0-6        digest_0.6.39    
 #>  [9] magrittr_2.0.5    mitml_0.4-5       evaluate_1.0.5    grid_4.6.1       
 #> [13] iterators_1.0.14  mice_3.19.0       fastmap_1.2.0     xgboost_3.2.1.1  
 #> [17] foreach_1.5.2     jomo_2.7-6        jsonlite_2.0.0    glmnet_5.0       
