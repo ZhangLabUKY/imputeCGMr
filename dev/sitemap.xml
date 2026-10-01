@@ -1,17 +1,17 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/LICENSE.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/articles/How-To-Use-CGMissingDataR.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/articles/Using-the-CGMissingDataR-Shiny-App.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/articles/index.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/authors.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/index.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/news/index.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/reference/CGMExmplDat10Pct.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/reference/CGMExmplDat5Pct.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/reference/CGMissingDataR-package.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/reference/index.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_app.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.html</loc></url>
-<url><loc>https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missingness_benchmark.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/LICENSE.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/articles/How-To-Use-imputeCGM.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/articles/Using-the-imputeCGM-Shiny-App.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/articles/index.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/authors.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/index.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/news/index.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/reference/CGMExmplDat10Pct.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/reference/CGMExmplDat5Pct.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/reference/imputeCGM-package.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/reference/index.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/reference/run_app.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/reference/run_missing_glucose_imputation.html</loc></url>
+<url><loc>https://zhanglabuky.github.io/imputeCGMr/dev/reference/run_missingness_benchmark.html</loc></url>
 </urlset>
 

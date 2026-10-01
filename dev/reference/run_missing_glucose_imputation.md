@@ -1,17 +1,12 @@
-# Impute real missing glucose values using the CGMissingData Python workflow
+# Impute missing glucose values using selectable MICE-based methods
 
-Strict R entry point for the real-missing-value imputation workflow in
-the Python package `CGMissingData` 0.1.6. When
-`imputer_backend = "sklearn"`, the full strict path is executed in
-Python through `reticulate`: pandas performs preprocessing and feature
-construction, scikit-learn runs `IterativeImputer`, statsmodels runs
-segmentwise ARIMA when the missing rate is low, and Python xgboost runs
-the high-missingness branch. The completed pandas data frame is then
-converted back to R.
-
-The R fallback `imputer_backend = "mice"` keeps the same R-side pipeline
-and uses the R package `mice` for the imputation matrix. No
-iterative-ridge backend is used.
+Imputes missing glucose values in continuous glucose monitoring (CGM)
+data. The function handles both explicit missing glucose values already
+coded as `NA` and implicit missing readings caused by timestamp gaps.
+Before imputation, each subject is regularized to an equal
+`interval_minutes` timestamp grid; missing timestamp gaps are converted
+into explicit rows with `target_col = NA`, then imputed using the
+selected backend and final imputation method.
 
 ## Usage
 
@@ -29,17 +24,21 @@ run_missing_glucose_imputation(
   knn_k = 7,
   xgb_nrounds = 300,
   lgb_nrounds = 400,
+  n_threads = 1L,
   arima_order = c(4L, 1L, 0L),
-  seed = 42,
+  seed = NULL,
   lag_k = c(1L, 2L, 3L),
   add_rollmean = TRUE,
   roll_window = 3L,
   interval_minutes = 5L,
+  missing_warning_threshold = 0.2,
+  study_start = NULL,
+  study_end = NULL,
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  prefer_cgmanalyzer_equal_interval = FALSE,
-  export = FALSE
+  export_path = NULL,
+  feature_types = NULL
 )
 ```
 
@@ -86,18 +85,38 @@ run_missing_glucose_imputation(
 
 - models:
 
-  Retained for compatibility. The strict Python workflow auto-selects
-  between `MICE+ARIMA` and `MICE+XGBoost` from the missing-rate
-  threshold; RF, kNN, LightGBM, and MICE-only are not used.
+  Final real-imputation method selector. Use `NULL` or `"auto"` to keep
+  the default missing-rate rule: `MICE+ARIMA` when the target missing
+  rate is less than or equal to `use_arima_if_missing_leq`, otherwise
+  `MICE+XGBoost`. Use exactly one of `"arima"`, `"xgboost"`, `"rf"`,
+  `"knn"`, or `"lightgbm"` to force a specific method regardless of
+  missing rate.
 
-- rf_n_estimators, knn_k, lgb_nrounds:
+- rf_n_estimators:
 
-  Retained for compatibility and ignored by the strict Python workflow.
+  Integer number of Random Forest trees. Used when `models = "rf"`.
+
+- knn_k:
+
+  Integer number of nearest neighbors. Used when `models = "knn"`.
 
 - xgb_nrounds:
 
-  Integer: number of XGBoost boosting rounds. Python's `n_estimators`
-  default is 300.
+  Integer number of XGBoost boosting rounds. Used when
+  `models = "xgboost"` and may be used by `models = "auto"` when the
+  missing-rate rule selects XGBoost.
+
+- lgb_nrounds:
+
+  Integer number of LightGBM boosting rounds. Used when
+  `models = "lightgbm"`.
+
+- n_threads:
+
+  Integer number of model-fitting threads for engines that support
+  thread controls. The default `1L` is conservative for CRAN and shared
+  systems. Increase for faster local XGBoost, Random Forest, and
+  LightGBM runs. ARIMA and kNN do not use this setting.
 
 - arima_order:
 
@@ -105,7 +124,9 @@ run_missing_glucose_imputation(
 
 - seed:
 
-  Integer seed for scikit-learn and XGBoost. Python default is 42.
+  Optional integer seed for reproducible MICE, tree-based models, and
+  the Python-compatible backend. The default `NULL` leaves the user's
+  random-number generator state uncontrolled.
 
 - lag_k:
 
@@ -123,14 +144,34 @@ run_missing_glucose_imputation(
 
 - interval_minutes:
 
-  Equal interval in minutes. In the Python-engine path, elapsed minutes
-  are computed by subject when `TimeSeries` is not already present.
+  Expected spacing, in minutes, between consecutive CGM readings. The
+  default is `5`. The function uses this value to regularize each
+  subject's timestamps to an equal-interval grid before imputation.
+
+- missing_warning_threshold:
+
+  Numeric value between 0 and 1. If the missingness rate in `target_col`
+  after timestamp-gap regularization exceeds this threshold, a warning
+  is issued. Default is `0.20`.
+
+- study_start:
+
+  Optional study start timestamp. If supplied, the function reports
+  subjects whose first observed CGM timestamp occurs after this time.
+  Leading study time is not imputed.
+
+- study_end:
+
+  Optional study end timestamp. If supplied, the function reports
+  subjects whose last observed CGM timestamp occurs before this time.
+  Trailing study time is not imputed.
 
 - use_arima_if_missing_leq:
 
-  Numeric missing-rate threshold. If the target missing rate is less
-  than or equal to this value, segmentwise ARIMA is used; otherwise
-  XGBoost is used. Python default is 0.05.
+  Numeric missing-rate threshold used only when `models` is `NULL` or
+  `"auto"`. If the target missing rate is less than or equal to this
+  value, segmentwise ARIMA is used; otherwise XGBoost is used. Default
+  is 0.05.
 
 - arima_min_history:
 
@@ -140,66 +181,92 @@ run_missing_glucose_imputation(
 - imputer_backend:
 
   One of `"mice"` or `"sklearn"`. `"mice"` uses the R package `mice` as
-  the CRAN-safe R-native fallback. `"sklearn"` uses Python modules
-  through `reticulate` for the full strict workflow and gives the
-  closest agreement with the Python package.
+  the CRAN-safe R-native backend. `"sklearn"` uses Python modules
+  through `reticulate` for a Python-compatible workflow.
 
-- prefer_cgmanalyzer_equal_interval:
+- export_path:
 
-  Retained for compatibility. The Python-engine path uses pandas
-  elapsed-minute construction unless an existing non-empty `TimeSeries`
-  column is supplied.
+  Optional single file path. If supplied, the returned imputed data
+  frame is also written to this CSV file. The default `NULL` does not
+  write any files.
 
-- export:
+- feature_types:
 
-  Logical; if `TRUE`, writes the returned imputed data frame to a
-  timestamped CSV file in the current working directory. Default is
-  `FALSE`.
+  Optional named character vector with `numeric` or `categorical`
+  overrides for selected predictors. Other types are inferred.
 
 ## Value
 
-A data.frame sorted by `id_col` and `TimeSeries`, matching the Python
-package output shape. The original target column is left unchanged, so
-rows that were originally missing remain `NA` in `target_col`.
-`imputed_glucose_value` contains the completed target values,
-`imputation_method` is either `"MICE+ARIMA"` or `"MICE+XGBoost"`, and
-`missing_rate` is the original target missing rate. Generated lag and
-rolling-mean feature columns are used internally and removed before
-return.
+A data.frame with a `feature_diagnostics` attribute (column, type,
+status, reason), containing the original user-supplied columns plus
+`imputed_glucose_value`, the completed glucose column. The original
+target column is left unchanged, so values that were originally missing
+or created from timestamp gaps remain `NA` in `target_col`, while their
+completed values are stored in `imputed_glucose_value`.
 
 ## Details
 
-For closest Python-package parity, use `imputer_backend = "sklearn"`
-with a Python environment containing `numpy`, `pandas`, `scikit-learn`,
-`statsmodels`, and `xgboost`. The sklearn path intentionally calls those
-modules directly rather than wrapping the Python package.
+Numeric columns and wholly numeric-convertible text are numeric
+predictors. Factors, logical values, and other text are categorical
+unless overridden by `feature_types`. Invalid numeric overrides identify
+the offending column. Categories use deterministic reference-coded
+indicators shared by both backends. Partly missing labels use an
+explicit missing category; metadata labels and indicator columns are
+never imputed independently. Constant and entirely missing predictors
+are excluded, with their original names, resolved types, and reasons
+recorded in `feature_diagnostics`. Original labels are preserved in the
+output. In separate per-subject fits, constant demographics cannot
+provide between-patient information.
 
-The ARIMA branch is segmentwise, matching the Python package: within
-each subject, contiguous missing blocks are detected, ARIMA is fit only
-to the MICE-completed history before the block, and forecasts replace
-the MICE values only when there are at least `arima_min_history` finite
-historical values and the ARIMA fit succeeds. Otherwise, the MICE value
-is retained.
+The imputation workflow first parses and sorts timestamps within each
+subject. Each subject is regularized to an equal `interval_minutes`
+grid. If a reading is missing because the timestamp is absent from the
+input data, a new row is inserted and the target glucose value is set to
+`NA`. These inserted missing values are then imputed using the same
+workflow as explicit `NA` values. The deterministic interval grid is
+controlled by this package; `CGManalyzer`'s equal-interval helper is
+called internally for workflow consistency.
+
+Internally, the function creates time features, lag features, and
+rolling-mean features to support imputation. The chosen backend first
+completes the numeric matrix. The selected final method then fills the
+missing glucose positions in `imputed_glucose_value`: either by
+segmentwise ARIMA or by a supervised model trained on observed glucose
+values and the completed feature matrix. These engineered columns are
+used only during model fitting and are removed from the returned data
+frame.
+
+`imputed_glucose_value` is returned as a continuous numeric model
+estimate. Users who require whole-number glucose values for reporting
+can round this column after imputation.
+
+Missingness warnings are based on the data after timestamp-gap
+regularization, so both explicit `NA` glucose values and rows created
+from timestamp gaps contribute to the reported missingness rate. The
+function also warns when long contiguous missing blocks of at least 12
+or 24 hours are detected. If `study_start` or `study_end` is supplied,
+leading or trailing study-period coverage gaps are reported but are not
+imputed.
 
 ## Examples
 
 ``` r
-data("CGMExmplDat10Pct")
+data("CGMExmplDat5Pct")
 out <- run_missing_glucose_imputation(
-  CGMExmplDat10Pct,
+  CGMExmplDat5Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
   time_col = "Time",
   imputer_backend = "mice"
 )
-#> Warning: Number of logged events: 35
-head(out[, c("LBORRES", "imputed_glucose_value", "imputation_method")])
-#>   LBORRES imputed_glucose_value imputation_method
-#> 1     150                   150      MICE+XGBoost
-#> 2     134                   134      MICE+XGBoost
-#> 3     125                   125      MICE+XGBoost
-#> 4     132                   132      MICE+XGBoost
-#> 5     132                   132      MICE+XGBoost
-#> 6     132                   132      MICE+XGBoost
+#> Warning: Number of logged events: 29
+head(subset(out, is.na(LBORRES)))
+#>     USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value
+#> 10       11   F      NA 2020-01-16 00:45:00  34   6.4             146.38118
+#> 31       11   F      NA 2020-01-16 02:30:00  34   6.4              83.42852
+#> 32       11   F      NA 2020-01-16 02:35:00  34   6.4              85.38643
+#> 55       11   F      NA 2020-01-16 04:30:00  34   6.4              79.98775
+#> 90       11   F      NA 2020-01-16 07:25:00  34   6.4             112.45792
+#> 146      11   F      NA 2020-01-16 12:05:00  34   6.4             128.39857
 ```

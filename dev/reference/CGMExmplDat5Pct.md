@@ -18,6 +18,10 @@ A data frame with 500 rows and 5 variables:
 
   Numeric subject identifier.
 
+- SEX:
+
+  Synthetic sex of the subject.
+
 - LBORRES:
 
   Laboratory Observed Result for Glucose (numeric), with deterministic

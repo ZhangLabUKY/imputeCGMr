@@ -1,91 +1,102 @@
 # Changelog
 
-## CGMissingDataR 0.0.2
+## imputeCGM 0.0.3.9000
 
 ### Major changes
 
-- - Added a package-bundled Shiny app for interactive missing glucose
-    imputation. The app lets users upload a CSV file, select the target
-    glucose, subject ID, timestamp, and feature columns, run
-    [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md),
-    preview imputed rows, and download the completed data as a CSV file.
+- Added general categorical metadata support and named `feature_types`
+  overrides shared by the MICE and sklearn backends. Special SEX
+  encoding is replaced by type-driven indicator encoding, preserving
+  original labels in the output.
+- Missing categorical labels use explicit indicators.
+  Constant/all-missing predictors are excluded from fitting with
+  `feature_diagnostics` explanations.
+- Original columns are restored using a stable row key after modeling.
+- The bundled app now supports all/none predictor selection and type
+  overrides.
+- Python dependencies are declared in `.onLoad()` through reticulate \>=
+  1.41, with optional LightGBM declared when requested. Python starts
+  only when the sklearn backend executes; reticulate’s environment
+  selection and errors apply.
 
-- Refocused the package documentation around real missing glucose
-  imputation with
-  [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md).
+## imputeCGM 0.0.3
 
-- Updated
-  [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md)
-  to return a single completed data frame rather than nested
-  model-specific output objects.
+CRAN release: 2026-07-16
 
-- Added the completed glucose column `imputed_glucose_value` while
-  preserving the original glucose column unchanged. Rows that were
-  originally missing in the target column remain `NA` in that original
-  column.
+### Major changes
 
-- Added method labels through `imputation_method`, currently either
-  `"MICE+ARIMA"` or `"MICE+XGBoost"`.
+- Renamed the package from `CGMissingDataR` to `imputeCGM`.
 
-- Added `missing_rate`, the observed missingness rate in the target
-  glucose column before imputation.
+- Updated package metadata, GitHub links, pkgdown links, README content,
+  vignette names, manual pages, tests, and Shiny app package references
+  for the new `imputeCGM` package identity.
 
-- Added automatic workflow selection based on the observed target
-  missing rate: `MICE+ARIMA` is used when the missing rate is less than
-  or equal to 5%, and `MICE+XGBoost` is used when the missing rate is
-  greater than 5%.
+- Documentation now points to the new GitHub repository named
+  `imputeCGMr`.
 
-- Added internal lag and rolling-mean feature construction for
-  imputation and modeling. These engineered columns are used internally
-  and removed from the returned data frame.
+- Addressed CRAN resubmission feedback by quoting software and package
+  names in `DESCRIPTION`, replacing the Shiny app example wrapper with
+  `if (interactive())`, adding Shiny helper test coverage, requiring
+  explicit export paths for CSV writing, and making seed setting opt-in
+  with `seed = NULL` by default.
 
-- Added support for common timestamp inputs, including colon-separated
-  timestamps, ISO-style timestamps, slash-separated timestamps, and
-  `POSIXct` values.
+## imputeCGM 0.0.2
 
-- Added an optional Python-compatible backend through
-  `imputer_backend = "sklearn"`. This path uses `reticulate` to call
-  Python modules directly, including `pandas`, `scikit-learn`,
-  `statsmodels`, and Python `xgboost`.
+### Major changes
 
-- Kept `imputer_backend = "mice"` as the CRAN-safe default backend.
+- [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMr/dev/reference/run_missing_glucose_imputation.md)
+  now handles both explicit missing glucose values and missing readings
+  implied by timestamp gaps. When timestamps skip expected CGM
+  intervals, the function regularizes each subject to the expected
+  interval and imputes the newly created missing glucose rows.
 
-- Added optional Python-engine tests that are skipped by default and
-  only run when explicitly enabled with the `CGMISSINGDATAR_TEST_PYTHON`
-  environment variable.
+- The returned data frame is now simpler. It contains the user’s
+  original columns plus `imputed_glucose_value`. Internal columns used
+  for timestamp regularization, lag features, rolling means, model
+  fitting, and missingness tracking are no longer returned.
 
-- Updated README and vignette documentation to describe the imputation
-  workflow, output columns, timestamp handling, backend options, and
-  optional reticulate setup.
+- The original glucose column is still preserved. Values that were
+  originally missing, or created from timestamp gaps, remain `NA` in the
+  original target column, while completed values are stored in
+  `imputed_glucose_value`.
 
-### Documentation
+- `imputed_glucose_value` is returned as a continuous numeric model
+  estimate. Users who need whole-number glucose values for reporting can
+  round this column after imputation.
 
-- Added documentation for launching and using the Shiny app.
+- [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/imputeCGMr/dev/reference/run_missing_glucose_imputation.md)
+  now supports selectable real-imputation methods through the existing
+  `models` argument. The default `models = "auto"` keeps the
+  missing-rate rule, using `MICE+ARIMA` when missingness is at or below
+  the configured threshold and `MICE+XGBoost` otherwise.
 
-- Updated examples to focus on real missing glucose imputation with
-  `CGMExmplDat10Pct`.
+- Users can now force one final real-imputation method with
+  `models = "arima"`, `"xgboost"`, `"rf"`, `"knn"`, or `"lightgbm"`.
+  Random Forest, kNN, and LightGBM use the same lag-feature workflow as
+  the existing ARIMA and XGBoost real-imputation paths.
 
-- Documented the difference between the default R-native MICE backend
-  and the optional Python-compatible sklearn backend.
+- Real-imputation model engines now use `n_threads = 1` by default for
+  CRAN-friendly and shared-system-friendly CPU use. Users can increase
+  `n_threads` for faster local XGBoost, Random Forest, or LightGBM runs.
 
-- Documented the expected output structure: `TimeSeries`,
-  `imputed_glucose_value`, `imputation_method`, and `missing_rate`.
+- Added a bundled Shiny app for interactive missing glucose imputation.
+  The app lets users upload a CSV file or load example data, choose the
+  relevant columns, select the final imputation method, run imputation,
+  preview results, and download the completed data.
 
-- Documented CRAN-safe usage of the optional Python backend.
+- Added built-in example data for demonstrating both explicit missing
+  glucose values and timestamp-gap handling.
 
-### Package maintenance
+- The optional Python-compatible backend remains available with
+  `imputer_backend = "sklearn"`. The default backend remains
+  `imputer_backend = "mice"` for standard R usage. Both backends support
+  the selectable final imputation methods, with Python LightGBM
+  available when the optional Python `lightgbm` module is installed.
 
-- Updated package version from `0.0.1.9000` to `0.0.2`.
+- Updated README and vignettes to describe timestamp-gap handling, the
+  simplified output structure, selectable final imputation methods, the
+  bundled Shiny app, backend options, and post-imputation rounding.
 
-- Moved `reticulate` to optional usage for the Python-compatible
-  backend.
-
-- Added and updated tests for the imputation return shape, timestamp
-  parsing, internal feature cleanup, and optional Python backend
-  behavior.
-
-## CGMissingDataR 0.0.1
-
-CRAN release: 2026-02-03
+## imputeCGM 0.0.1
 
 - Initial package creation preparing for CRAN submission.
