@@ -646,17 +646,31 @@ run_comprehensive_imputation_benchmark <- function(
 #' @param imputer_backend One of `"mice"` or `"sklearn"`. `"mice"` uses the
 #'   R package `mice` as the CRAN-safe R-native backend. `"sklearn"` uses
 #'   Python modules through `reticulate` for a Python-compatible workflow.
+#' @param feature_types Optional named character vector with `numeric` or
+#'   `categorical` overrides for selected predictors. Other types are inferred.
 #' @param export_path Optional single file path. If supplied, the returned
 #'   imputed data frame is also written to this CSV file. The default `NULL`
 #'   does not write any files.
 #'
-#' @return A data.frame containing the original user-supplied columns plus
+#' @return A data.frame with a `feature_diagnostics` attribute (column, type,
+#'   status, reason), containing the original user-supplied columns plus
 #'   `imputed_glucose_value`, the completed glucose column. The original target
 #'   column is left unchanged, so values that were originally missing or created
 #'   from timestamp gaps remain `NA` in `target_col`, while their completed
 #'   values are stored in `imputed_glucose_value`.
 #'
 #' @details
+#' Numeric columns and wholly numeric-convertible text are numeric predictors.
+#' Factors, logical values, and other text are categorical unless overridden by
+#' `feature_types`. Invalid numeric overrides identify the offending column.
+#' Categories use deterministic reference-coded indicators shared by both
+#' backends. Partly missing labels use an explicit missing category; metadata
+#' labels and indicator columns are never imputed independently. Constant and
+#' entirely missing predictors are excluded, with their original names, resolved
+#' types, and reasons recorded in `feature_diagnostics`. Original labels are
+#' preserved in the output. In separate per-subject fits, constant demographics
+#' cannot provide between-patient information.
+#'
 #' The imputation workflow first parses and sorts timestamps within each subject.
 #' Each subject is regularized to an equal `interval_minutes` grid. If a reading
 #' is missing because the timestamp is absent from the input data, a new row is
@@ -666,10 +680,10 @@ run_comprehensive_imputation_benchmark <- function(
 #' equal-interval helper is called internally for workflow consistency.
 #'
 #' Internally, the function creates time features, lag features, and rolling-mean
-#' features to support imputation. MICE first completes the target and feature
+#' features to support imputation. The chosen backend first completes the numeric
 #' matrix. The selected final method then fills the missing glucose positions in
 #' `imputed_glucose_value`: either by segmentwise ARIMA or by a supervised model
-#' trained on observed glucose values and the MICE-completed feature matrix.
+#' trained on observed glucose values and the completed feature matrix.
 #' These engineered columns are used only during model fitting and are removed
 #' from the returned data frame.
 #'
@@ -724,7 +738,8 @@ run_missing_glucose_imputation <- function(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  export_path = NULL
+  export_path = NULL,
+  feature_types = NULL
 ) {
   imputer_backend <- match.arg(imputer_backend)
   seed <- .cgmd_normalize_seed(seed)
@@ -826,13 +841,46 @@ run_missing_glucose_imputation <- function(
     study_end = study_end
   )
 
+  # Preserve the regularized user data; fit on a separate numeric working copy.
+  original <- out[, original_output_cols, drop = FALSE]
+  row_key <- utils::tail(make.unique(c(names(out), ".cgmd_output_row")), 1L)
+  original[[row_key]] <- seq_len(nrow(original))
+  base_cols <- if (is.null(feature_cols)) intersect(c("AGE", "SEX", "HBA1C"), names(out)) else feature_cols
+  base_cols <- setdiff(base_cols, c(target_col, id_col, time_col))
+  prepared <- .cgmd_prepare_features(out, base_cols, feature_types)
+  working <- out[, unique(c(id_col, time_col, target_col, "TimeSeries", "TimeDifferenceMinutes")), drop = FALSE]
+  working[[row_key]] <- original[[row_key]]
+  # Subject IDs are an internal index, never an ordinal metadata measurement.
+  working[[id_col]] <- match(out[[id_col]], unique(out[[id_col]]))
+  target_values <- .cgmd_py_to_numeric(out[[target_col]])
+  if (any(!is.na(out[[target_col]]) & !is.finite(target_values))) {
+    stop("Target column '", target_col, "' contains non-numeric or non-finite values.", call. = FALSE)
+  }
+  if (!any(is.finite(target_values))) {
+    stop("All target values are missing; at least one observed target value is required.", call. = FALSE)
+  }
+  working[[target_col]] <- target_values
+  for (nm in names(prepared$data)) working[[nm]] <- prepared$data[[nm]]
+  working <- .cgmd_py_add_lag_features(working, target_col = target_col,
+    id_col = id_col, time_col = "TimeSeries", lag_k = lag_k,
+    roll_window = roll_window, add_rollmean = add_rollmean)
+  selected_feature_cols <- unique(c(names(prepared$data), "TimeSeries", "TimeDifferenceMinutes", id_col,
+    paste0("lag", lag_k), if (isTRUE(add_rollmean)) "rollmean" else character()))
+  selected_feature_cols <- intersect(selected_feature_cols, names(working))
+  selected_feature_cols <- selected_feature_cols[vapply(selected_feature_cols, function(nm) {
+    values <- working[[nm]]
+    any(is.finite(values)) && length(unique(values[is.finite(values)])) > 1L
+  }, logical(1))]
+  # A numeric time feature remains available in ordinary multi-reading series.
+  out <- working
+
   if (identical(imputer_backend, "sklearn")) {
     result <- .cgmd_py_run_python_engine(
       df = out,
       timestamp_col = time_col,
       subjectid_col = id_col,
       glucose_col = target_col,
-      feature_cols = feature_cols,
+      feature_cols = selected_feature_cols,
       interval_minutes = interval_minutes,
       use_arima_if_missing_leq = use_arima_if_missing_leq,
       seed = seed,
@@ -849,73 +897,9 @@ run_missing_glucose_imputation <- function(
       models = real_imputation_model,
       drop_internal_cols = TRUE
     )
-    result <- .cgmd_py_keep_user_output_cols(
-      df = result,
-      original_cols = original_output_cols
-    )
-
-    result <- .cgmd_py_export_if_requested(result, export_path)
-    return(result)
+    return(.cgmd_restore_feature_output(result, original, row_key,
+      prepared$diagnostics, export_path))
   }
-
-  out <- .cgmd_py_add_timeseries_column(
-    df = out,
-    ts_col = time_col,
-    id_col = id_col,
-    interval_minutes = interval_minutes
-  )
-
-  out <- .cgmd_py_encode_sex(out, "SEX")
-
-  numeric_cols <- c(
-    target_col,
-    "TimeSeries",
-    "TimeDifferenceMinutes",
-    id_col,
-    "AGE",
-    "HBA1C",
-    "SEX"
-  )
-  for (nm in intersect(numeric_cols, names(out))) {
-    out[[nm]] <- .cgmd_py_to_numeric(out[[nm]])
-  }
-
-  out <- .cgmd_py_add_lag_features(
-    df = out,
-    target_col = target_col,
-    id_col = id_col,
-    time_col = "TimeSeries",
-    lag_k = lag_k,
-    roll_window = roll_window,
-    add_rollmean = add_rollmean
-  )
-
-  lag_cols <- paste0("lag", lag_k)
-  roll_cols <- if (isTRUE(add_rollmean)) "rollmean" else character(0)
-
-  if (is.null(feature_cols)) {
-    selected_feature_cols <- c(
-      "TimeSeries",
-      "TimeDifferenceMinutes",
-      id_col,
-      "AGE",
-      "SEX",
-      "HBA1C",
-      lag_cols,
-      roll_cols
-    )
-  } else {
-    selected_feature_cols <- c(
-      feature_cols,
-      "TimeSeries",
-      "TimeDifferenceMinutes",
-      id_col,
-      lag_cols,
-      roll_cols
-    )
-  }
-  selected_feature_cols <- unique(setdiff(selected_feature_cols, target_col))
-  selected_feature_cols <- intersect(selected_feature_cols, names(out))
 
   result <- .cgmd_py_impute_values(
     df = out,
@@ -935,13 +919,8 @@ run_missing_glucose_imputation <- function(
     n_threads = n_threads,
     models = real_imputation_model
   )
-  result <- .cgmd_py_keep_user_output_cols(
-    df = result,
-    original_cols = original_output_cols
-  )
-
-  result <- .cgmd_py_export_if_requested(result, export_path)
-  result
+  .cgmd_restore_feature_output(result, original, row_key,
+    prepared$diagnostics, export_path)
 }
 
 .cgmd_normalize_seed <- function(seed) {
@@ -1002,59 +981,8 @@ run_missing_glucose_imputation <- function(
   out
 }
 
-.cgmd_py_ensure_python_engine <- function() {
-  if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop(
-      "imputer_backend = 'sklearn' requires the optional R package 'reticulate'. ",
-      "Install it with install.packages('reticulate'), or use imputer_backend = 'mice'.",
-      call. = FALSE
-    )
-  }
-
-  required_py_packages <- c(
-    "numpy",
-    "pandas",
-    "scikit-learn",
-    "statsmodels",
-    "xgboost"
-  )
-
-  if ("py_require" %in% getNamespaceExports("reticulate")) {
-    reticulate::py_require(required_py_packages)
-  }
-
-  if (!reticulate::py_available(initialize = TRUE)) {
-    stop(
-      "imputer_backend = 'sklearn' requires an available Python installation. ",
-      "Use imputer_backend = 'mice' for an R-native fallback, or configure Python with reticulate.",
-      call. = FALSE
-    )
-  }
-
-  missing_modules <- character(0)
-  for (mod in c("numpy", "pandas", "sklearn", "statsmodels", "xgboost")) {
-    if (!reticulate::py_module_available(mod)) {
-      missing_modules <- c(missing_modules, mod)
-    }
-  }
-
-  if (length(missing_modules) > 0L) {
-    stop(
-      "The sklearn Python engine requires Python modules: numpy, pandas, scikit-learn, statsmodels, xgboost. ",
-      "Missing import names: ",
-      paste(missing_modules, collapse = ", "),
-      ". ",
-      "Install them with reticulate::py_install(c('numpy', 'pandas', 'scikit-learn', 'statsmodels', 'xgboost'), pip = TRUE), ",
-      "then restart R.",
-      call. = FALSE
-    )
-  }
-
-  invisible(TRUE)
-}
-
-.cgmd_py_define_python_engine <- function() {
-  .cgmd_py_ensure_python_engine()
+.cgmd_py_define_python_engine <- function(models = "auto") {
+  if (any(models == "lightgbm")) reticulate::py_require("lightgbm")
   code <- paste(
     c(
       "import numpy as np",
@@ -1067,13 +995,6 @@ run_missing_glucose_imputation <- function(
       "from statsmodels.tsa.arima.model import ARIMA",
       "import xgboost as xgb",
       "import re",
-      "",
-      "def _cgmd_encode_sex(df, col='SEX'):",
-      "    out = df.copy()",
-      "    if col in out.columns:",
-      "        s = out[col].astype(str).str.strip().str.upper()",
-      "        out[col] = s.map({'M': 1, 'MALE': 1, '1': 1, 'F': 0, 'FEMALE': 0, '0': 0})",
-      "    return out",
       "",
       "def _cgmd_add_timeseries_column(df, ts_col='timestamp', id_col='subjectid', interval_minutes=5):",
       "    if ts_col not in df.columns:",
@@ -1211,10 +1132,7 @@ run_missing_glucose_imputation <- function(
       "def _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=None, nrounds=400, n_threads=1):",
       "    if X_missing.shape[0] == 0:",
       "        return np.asarray([], dtype=float)",
-      "    try:",
-      "        import lightgbm as lgb",
-      "    except Exception as exc:",
-      "        raise ImportError(\"models='lightgbm' with imputer_backend='sklearn' requires the Python module lightgbm. Install it with reticulate::py_install('lightgbm', pip = TRUE), then restart R.\") from exc",
+      "    import lightgbm as lgb",
       "    model = lgb.LGBMRegressor(",
       "        objective='regression',",
       "        n_estimators=int(nrounds),",
@@ -1253,19 +1171,7 @@ run_missing_glucose_imputation <- function(
       "def cgmd_r_run_python_engine(r_df, timestamp_col='timestamp', subjectid_col='subjectid', glucose_col='glucose_value', feature_cols=None, interval_minutes=5, use_arima_if_missing_leq=0.05, seed=None, lag_k=(1,2,3), roll_window=3, add_rollmean=True, arima_order=(4,1,0), arima_min_history=20, xgb_nrounds=300, rf_n_estimators=200, knn_k=7, lgb_nrounds=400, n_threads=1, models='auto', drop_internal_cols=True):",
       "    out = pd.DataFrame(r_df).copy()",
       "    out = _cgmd_add_timeseries_column(out, ts_col=timestamp_col, id_col=subjectid_col, interval_minutes=interval_minutes)",
-      "    out = _cgmd_encode_sex(out, 'SEX')",
-      "    numeric_cols = [glucose_col, 'TimeSeries', 'TimeDifferenceMinutes', subjectid_col, 'AGE', 'HBA1C', 'SEX']",
-      "    for c in numeric_cols:",
-      "        if c in out.columns:",
-      "            out[c] = pd.to_numeric(out[c], errors='coerce')",
-      "    lag_k = tuple(int(x) for x in lag_k)",
-      "    out = _cgmd_add_lag_features(out, target_col=glucose_col, id_col=subjectid_col, time_col='TimeSeries', lag_k=lag_k, roll_window=roll_window, add_rollmean=bool(add_rollmean))",
-      "    lag_cols = [f'lag{int(k)}' for k in lag_k]",
-      "    roll_cols = ['rollmean'] if bool(add_rollmean) else []",
-      "    if feature_cols is None:",
-      "        selected_feature_cols = ['TimeSeries', 'TimeDifferenceMinutes', subjectid_col, 'AGE', 'SEX', 'HBA1C'] + lag_cols + roll_cols",
-      "    else:",
-      "        selected_feature_cols = list(feature_cols) + ['TimeSeries', 'TimeDifferenceMinutes', subjectid_col] + lag_cols + roll_cols",
+      "    selected_feature_cols = list(feature_cols) if feature_cols is not None else []",
       "    selected_feature_cols = [c for c in dict.fromkeys(selected_feature_cols) if c in out.columns and c != glucose_col]",
       "    out = out.sort_values([subjectid_col, 'TimeSeries']).reset_index(drop=True).copy()",
       "    mask_pos = out[glucose_col].isna().to_numpy()",
@@ -1335,7 +1241,7 @@ run_missing_glucose_imputation <- function(
   drop_internal_cols = TRUE
 ) {
   seed <- .cgmd_normalize_seed(seed)
-  .cgmd_py_define_python_engine()
+  .cgmd_py_define_python_engine(models)
 
   py_df <- reticulate::r_to_py(as.data.frame(df, stringsAsFactors = FALSE))
   py_feature_cols <- if (is.null(feature_cols)) NULL else as.list(feature_cols)
@@ -1806,18 +1712,6 @@ run_missing_glucose_imputation <- function(
   }
 
   .cgmd_py_timeseries_fallback(out = out, parsed = parsed, id_col = id_col)
-}
-
-.cgmd_py_encode_sex <- function(df, col = "SEX") {
-  out <- as.data.frame(df, stringsAsFactors = FALSE)
-  if (col %in% names(out)) {
-    s <- toupper(trimws(as.character(out[[col]])))
-    mapped <- rep(NA_real_, length(s))
-    mapped[s %in% c("M", "MALE", "1")] <- 1
-    mapped[s %in% c("F", "FEMALE", "0")] <- 0
-    out[[col]] <- mapped
-  }
-  out
 }
 
 .cgmd_py_add_lag_features <- function(

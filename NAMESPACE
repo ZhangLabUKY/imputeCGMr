@@ -3,18 +3,28 @@
 export(run_app)
 export(run_missing_glucose_imputation)
 export(run_missingness_benchmark)
-importFrom(CGManalyzer,equalInterval.fn)
-importFrom(CGManalyzer,timeSeqConversion.fn)
+importFrom(CGManalyzer,
+  equalInterval.fn,
+  timeSeqConversion.fn
+)
 importFrom(FNN,knn.reg)
-importFrom(data.table,as.data.table)
-importFrom(data.table,frollmean)
-importFrom(data.table,setorderv)
-importFrom(data.table,shift)
-importFrom(mice,complete)
-importFrom(mice,mice)
+importFrom(data.table,
+  as.data.table,
+  frollmean,
+  setorderv,
+  shift
+)
+importFrom(mice,
+  complete,
+  mice
+)
 importFrom(ranger,ranger)
-importFrom(stats,complete.cases)
-importFrom(stats,median)
-importFrom(stats,predict)
-importFrom(utils,read.csv)
-importFrom(utils,write.csv)
+importFrom(stats,
+  complete.cases,
+  median,
+  predict
+)
+importFrom(utils,
+  read.csv,
+  write.csv
+)

@@ -1,6 +1,6 @@
 Package: imputeCGM
 Title: Impute Missing Glucose Values in CGM Data
-Version: 0.0.3
+Version: 0.0.3.9000
 Authors@R: c(
     person("Shubh", "Saraswat", email = "shubh.saraswat00@gmail.com", role = c("cre", "aut", "cph"),
     comment = c(ORCID = "0009-0009-2359-1484")),
@@ -27,7 +27,6 @@ License: GPL (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.3)
-RoxygenNote: 7.3.3
 Imports:
     mice,
     FNN,
@@ -38,7 +37,7 @@ Imports:
     forecast,
     CGManalyzer,
     lifecycle,
-    reticulate,
+    reticulate (>= 1.41),
     shiny
 Suggests:
     testthat (>= 3.0.0),
@@ -52,3 +51,4 @@ URL: https://zhanglabuky.github.io/imputeCGMr/, https://github.com/ZhangLabUKY/i
 BugReports: https://github.com/ZhangLabUKY/imputeCGMr/issues
 LazyData: true
 VignetteBuilder: knitr
+Config/roxygen2/version: 8.1.0

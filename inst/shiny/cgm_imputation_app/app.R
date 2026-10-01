@@ -25,12 +25,14 @@ options(shiny.maxRequestSize = 1024^3)
   knn_k,
   lgb_nrounds,
   n_threads,
-  seed
+  seed,
+  feature_types = NULL
 ) {
   list(
     data = data,
     target_col = target_col,
     feature_cols = feature_cols,
+    feature_types = feature_types,
     id_col = id_col,
     time_col = time_col,
     imputer_backend = imputer_backend,
@@ -79,6 +81,9 @@ ui <- fluidPage(
       tags$hr(),
 
       uiOutput("column_selectors"),
+      actionButton("features_all", "Select all predictors"),
+      actionButton("features_none", "Exclude all predictors"),
+      uiOutput("feature_types_ui"),
 
       tags$hr(),
 
@@ -210,7 +215,9 @@ ui <- fluidPage(
       tags$hr(),
 
       h4("Preview of rows imputed from originally missing values"),
-      tableOutput("imputed_preview")
+      tableOutput("imputed_preview"),
+      h4("Predictor diagnostics"),
+      tableOutput("feature_diagnostics")
     )
   )
 )
@@ -430,11 +437,37 @@ server <- function(input, output, session) {
         inputId = "feature_cols",
         label = "Feature columns",
         choices = cols,
-        selected = character(0),
+        selected = cols,
         multiple = TRUE,
         options = list(plugins = list("remove_button"))
       )
     )
+  })
+
+  feature_choices <- reactive({
+    setdiff(names(uploaded_data()), c(input$target_col, input$id_col, input$time_col))
+  })
+  observeEvent(feature_choices(), {
+    available <- feature_choices()
+    old <- isolate(input$feature_cols)
+    updateSelectizeInput(session, "feature_cols", choices = available,
+      selected = union(intersect(old, available), setdiff(available, isolate(previous_features()))))
+    previous_features(available)
+  })
+  previous_features <- reactiveVal(character())
+  observeEvent(input$features_all, {
+    updateSelectizeInput(session, "feature_cols", selected = feature_choices())
+  })
+  observeEvent(input$features_none, {
+    updateSelectizeInput(session, "feature_cols", selected = character())
+  })
+  output$feature_types_ui <- renderUI({
+    columns <- input$feature_cols
+    tagList(lapply(columns, function(column) {
+      key <- paste0("feature_type_", paste(as.integer(charToRaw(enc2utf8(column))), collapse = "_"))
+      selectInput(key, paste("Type for", column), choices = c("Auto" = "auto", "Numeric" = "numeric", "Categorical" = "categorical"),
+        selected = if (is.null(isolate(input[[key]]))) "auto" else isolate(input[[key]]))
+    }))
   })
 
   imputed_data <- eventReactive(input$run, {
@@ -458,14 +491,19 @@ server <- function(input, output, session) {
           incProgress(0.4)
 
           feature_cols <- input$feature_cols
-          if (length(feature_cols) == 0L) {
-            feature_cols <- NULL
-          }
+          feature_cols <- as.character(feature_cols)
+          types <- stats::setNames(vapply(feature_cols, function(column) {
+            key <- paste0("feature_type_", paste(as.integer(charToRaw(enc2utf8(column))), collapse = "_"))
+            value <- input[[key]]
+            if (is.null(value)) "auto" else value
+          }, character(1)), feature_cols)
+          types <- types[types != "auto"]
 
           call_args <- .cgmd_shiny_imputation_args(
             data = dat,
             target_col = input$target_col,
             feature_cols = feature_cols,
+            feature_types = types,
             id_col = input$id_col,
             time_col = input$time_col,
             imputer_backend = input$imputer_backend,
@@ -493,6 +531,10 @@ server <- function(input, output, session) {
         }
       )
     })
+  })
+
+  output$feature_diagnostics <- renderTable({
+    attr(imputed_data(), "feature_diagnostics", exact = TRUE)
   })
 
   output$imputed_preview <- renderTable({

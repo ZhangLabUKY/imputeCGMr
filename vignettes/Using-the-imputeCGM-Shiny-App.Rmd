@@ -76,27 +76,6 @@ Launch the app with:
 run_app()
 ```
 
-During package development, after running `devtools::load_all()`, the same
-launcher can be used:
-
-```{r launch-app-development, eval = FALSE}
-devtools::load_all()
-run_app()
-```
-
-The app is bundled inside the installed package, typically under:
-
-```r
-system.file(
-  "shiny",
-  "cgm_imputation_app",
-  package = "imputeCGM"
-)
-```
-
-Users normally do not need to access this directory directly. The `run_app()`
-launcher finds it automatically.
-
 # Input options
 
 The app provides two ways to load data.
@@ -189,8 +168,17 @@ AGE
 hba1c
 ```
 
-Feature columns should be numeric or coercible to numeric. If a `SEX` column is
-present, the underlying function can encode it internally.
+Feature columns can be numeric or categorical. Use the type controls to override
+automatic inference, including numeric-coded categories.
+
+Use `feature_cols` to select any numeric or categorical metadata columns.
+The package infers types; `feature_types = c(group_code = "categorical")`
+marks numeric category codes explicitly. Categorical predictors use indicator
+columns with a deterministic reference category. Missing labels use a separate
+missing-category indicator rather than an estimated demographic value.
+Both the R-native and Python backends use the same predictor preparation.
+Original names, labels, and blanks are preserved in returned data.
+
 
 # Missingness summary card
 
@@ -279,23 +267,11 @@ This path sends the data frame to Python through `reticulate`. Python then uses:
 - Python `xgboost` for XGBoost regression;
 - Python `lightgbm` when forcing LightGBM.
 
-To use the Python backend, install `reticulate` and declare the Python
-requirements before launching or running the app:
-
-```{r python-requirements, eval = FALSE}
-install.packages("reticulate")
-
-reticulate::py_require(c(
-  "numpy",
-  "pandas",
-  "scikit-learn",
-  "statsmodels",
-  "xgboost"
-))
-
-# Optional, only needed for models = "lightgbm"
-reticulate::py_install("lightgbm", pip = TRUE)
-```
+imputeCGM requires `reticulate >= 1.41` and declares its core Python
+dependencies in `.onLoad()`, adding LightGBM when requested. This does not start
+Python. When sklearn runs, reticulate uses its normal environment selection and
+can provision a managed environment if no existing environment takes precedence.
+Install dependencies during setup for user- or deployment-selected environments.
 
 The Python backend is optional. It is not required for installing or loading the
 package.
@@ -408,22 +384,10 @@ from timestamp gaps before imputing glucose values.
 
 ## Python backend fails because a Python module is missing
 
-If `imputer_backend = "sklearn"` fails because Python packages are missing, run:
-
-```r
-reticulate::py_require(c(
-  "numpy",
-  "pandas",
-  "scikit-learn",
-  "statsmodels",
-  "xgboost"
-))
-
-# Optional, only needed for models = "lightgbm"
-reticulate::py_install("lightgbm", pip = TRUE)
-```
-
-Then restart R and launch the app again.
+The package declares its requirements automatically. In an externally managed
+environment, install missing dependencies during environment setup or deployment,
+then restart R and launch the app again. The repository's `requirements.txt`
+lists the direct Python dependencies, including optional LightGBM.
 
 ## Downloaded data contain `NA` in the original glucose column
 
@@ -433,30 +397,3 @@ completed values are stored in:
 ```r
 imputed_glucose_value
 ```
-
-# Developer notes
-
-The recommended package structure for the app is:
-
-```text
-inst/
-└── shiny/
-    └── cgm_imputation_app/
-        └── app.R
-```
-
-The launcher should live in an exported R function, for example:
-
-```r
-run_app <- function() {
-  app_dir <- system.file(
-    "shiny",
-    "cgm_imputation_app",
-    package = "imputeCGM"
-  )
-  shiny::runApp(app_dir, display.mode = "normal")
-}
-```
-
-Because the app is optional, `shiny` should usually be listed in `Suggests`, not
-`Imports`, unless the package requires Shiny for normal operation.

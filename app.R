@@ -11,8 +11,8 @@ if (!requireNamespace("pkgload", quietly = TRUE)) {
   )
 }
 
-# The reticulate::py_require block has been removed.
-# Posit Connect Cloud handles the Python environment using manifest.json and requirements.txt.
+# Deployment installs Python dependencies from requirements.txt. The sklearn
+# backend declares requirements lazily and respects the host-selected environment.
 
 pkgload::load_all(
   ".",

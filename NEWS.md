@@ -1,3 +1,18 @@
+# imputeCGM 0.0.3.9000
+
+## Major changes
+
+* Added general categorical metadata support and named `feature_types` overrides
+  shared by the MICE and sklearn backends. Special SEX encoding is replaced by
+  type-driven indicator encoding, preserving original labels in the output.
+* Missing categorical labels use explicit indicators. Constant/all-missing
+  predictors are excluded from fitting with `feature_diagnostics` explanations.
+* Original columns are restored using a stable row key after modeling.
+* The bundled app now supports all/none predictor selection and type overrides.
+* Python dependencies are declared in `.onLoad()` through reticulate >= 1.41,
+  with optional LightGBM declared when requested. Python starts only when the
+  sklearn backend executes; reticulate's environment selection and errors apply.
+
 # imputeCGM 0.0.3
 
 ## Major changes

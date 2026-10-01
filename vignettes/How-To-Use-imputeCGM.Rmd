@@ -111,9 +111,8 @@ At minimum, the imputation function needs:
 | Raw timestamp | `time_col` | `Time` |
 | Additional predictors | `feature_cols` | `AGE`, `hba1c`, `SEX` |
 
-The target column may contain missing values. Predictor columns should be numeric
-or coercible to numeric. The `SEX` column, when present, is internally encoded
-as `M = 1` and `F = 0`.
+The target column may contain missing values. Predictor columns can be numeric
+or categorical; types can be inferred or explicitly overridden.
 
 # What counts as missing?
 
@@ -304,13 +303,6 @@ expanded grid:
 These engineered columns are used internally by the imputer and final model but
 are removed from the returned data frame.
 
-```{r internal-feature-check}
-grep("^lag[0-9]+$|^rollmean$|^TimeSeries$|^TimeDifferenceMinutes$", names(impute_out), value = TRUE)
-```
-
-This should return an empty character vector because those features are internal
-implementation details.
-
 # Continuous imputed values
 
 `imputed_glucose_value` is returned as a continuous numeric model estimate. It is
@@ -323,6 +315,17 @@ imputation:
 ```{r rounding-example, eval = FALSE}
 impute_out$imputed_glucose_value_rounded <- round(impute_out$imputed_glucose_value)
 ```
+
+
+# Metadata predictors
+
+Use `feature_cols` to select any numeric or categorical metadata columns.
+The package infers types; `feature_types = c(group_code = "categorical")`
+marks numeric category codes explicitly. Categorical predictors use indicator
+columns with a deterministic reference category. Missing labels use a separate
+missing-category indicator rather than an estimated demographic value.
+Both the R-native and Python backends use the same predictor preparation.
+Original names, labels, and blanks are preserved in returned data.
 
 # Optional Python-compatible backend
 
@@ -345,26 +348,11 @@ The completed pandas data frame is then converted back to R.
 
 ## Installing optional Python dependencies
 
-Install `reticulate` in R:
-
-```r
-install.packages("reticulate")
-```
-
-Declare the Python dependencies before running the Python backend:
-
-```r
-reticulate::py_require(c(
-  "numpy",
-  "pandas",
-  "scikit-learn",
-  "statsmodels",
-  "xgboost"
-))
-
-# Optional, only needed for models = "lightgbm"
-reticulate::py_install("lightgbm", pip = TRUE)
-```
+imputeCGM requires `reticulate >= 1.41` and declares its core Python
+dependencies in `.onLoad()`. LightGBM is declared when that model is requested.
+Python starts only when the sklearn backend runs. Reticulate can provision a
+managed environment when no existing environment takes precedence. For a user-
+or deployment-selected environment, install these dependencies during setup.
 
 Then call the function with `imputer_backend = "sklearn"`:
 
@@ -454,24 +442,10 @@ formats.
 
 ## Python module errors
 
-If the Python backend reports a missing module such as `sklearn`, remember that
-the package is installed as `scikit-learn` but imported as `sklearn`.
-
-```r
-reticulate::py_require(c(
-  "numpy",
-  "pandas",
-  "scikit-learn",
-  "statsmodels",
-  "xgboost"
-))
-
-# Optional, only needed for models = "lightgbm"
-reticulate::py_install("lightgbm", pip = TRUE)
-```
-
-If Python was already initialized before declaring requirements, restart R and
-run the call again.
+The package declares its requirements automatically, but `py_require()` does
+not install missing modules into an externally managed environment. Install
+the required modules in the selected environment during setup, then restart R.
+The module imported as `sklearn` is installed as `scikit-learn`.
 
 ## Warnings from `mice`
 

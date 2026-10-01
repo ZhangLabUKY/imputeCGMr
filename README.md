@@ -54,7 +54,8 @@ original glucose column unchanged.
     grid;
 4.  converts missing timestamp gaps into explicit rows with
     `target_col = NA`;
-5.  encodes `SEX` when present;
+5.  prepares selected numeric metadata and reference-coded categorical
+    indicators;
 6.  creates internal time, lag, and rolling-mean glucose features;
 7.  imputes the target and feature matrix;
 8.  chooses the final model from `models`:
@@ -83,24 +84,10 @@ examples, tests, and shared systems use conservative CPU resources.
 Increase `n_threads` for faster local XGBoost, Random Forest, or
 LightGBM runs.
 
-``` r
-install.packages("reticulate")
-```
-
-The Python backend uses these Python packages through `reticulate`:
-
-``` r
-reticulate::py_require(c(
-  "numpy",
-  "pandas",
-  "scikit-learn",
-  "statsmodels",
-  "xgboost"
-))
-
-# Optional, only needed for models = "lightgbm"
-reticulate::py_install("lightgbm", pip = TRUE)
-```
+The package declares its Python dependencies automatically through
+`reticulate`. See [Python setup and
+deployment](#python-setup-and-deployment) for managed environments and
+environments supplied by a user or deployment host.
 
 ## Basic use
 
@@ -150,6 +137,18 @@ round after imputation:
 out$imputed_glucose_value_rounded <- round(out$imputed_glucose_value)
 ```
 
+# Metadata predictors
+
+Use `feature_cols` to select any numeric or categorical metadata
+columns. The package infers types;
+`feature_types = c(group_code = "categorical")` marks numeric category
+codes explicitly. Categorical predictors use indicator columns with a
+deterministic reference category. Missing labels use a separate
+missing-category indicator rather than an estimated demographic value.
+Both the R-native and Python backends use the same predictor
+preparation. Original names, labels, and blanks are preserved in
+returned data.
+
 ## Timestamp gaps
 
 Raw CGM exports may represent missingness in two ways:
@@ -195,10 +194,6 @@ with:
 ``` r
 install.packages("shiny")
 ```
-
-For package developers, the app is stored under
-`inst/shiny/cgm_imputation_app/` and is launched through the exported
-`run_app()` helper.
 
 ## Optional Python-compatible backend
 

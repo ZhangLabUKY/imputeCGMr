@@ -30,7 +30,8 @@ run_missing_glucose_imputation(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  export_path = NULL
+  export_path = NULL,
+  feature_types = NULL
 )
 }
 \arguments{
@@ -130,9 +131,13 @@ Python modules through \code{reticulate} for a Python-compatible workflow.}
 \item{export_path}{Optional single file path. If supplied, the returned
 imputed data frame is also written to this CSV file. The default \code{NULL}
 does not write any files.}
+
+\item{feature_types}{Optional named character vector with \code{numeric} or
+\code{categorical} overrides for selected predictors. Other types are inferred.}
 }
 \value{
-A data.frame containing the original user-supplied columns plus
+A data.frame with a \code{feature_diagnostics} attribute (column, type,
+status, reason), containing the original user-supplied columns plus
 \code{imputed_glucose_value}, the completed glucose column. The original target
 column is left unchanged, so values that were originally missing or created
 from timestamp gaps remain \code{NA} in \code{target_col}, while their completed
@@ -148,6 +153,17 @@ timestamp grid; missing timestamp gaps are converted into explicit rows with
 imputation method.
 }
 \details{
+Numeric columns and wholly numeric-convertible text are numeric predictors.
+Factors, logical values, and other text are categorical unless overridden by
+\code{feature_types}. Invalid numeric overrides identify the offending column.
+Categories use deterministic reference-coded indicators shared by both
+backends. Partly missing labels use an explicit missing category; metadata
+labels and indicator columns are never imputed independently. Constant and
+entirely missing predictors are excluded, with their original names, resolved
+types, and reasons recorded in \code{feature_diagnostics}. Original labels are
+preserved in the output. In separate per-subject fits, constant demographics
+cannot provide between-patient information.
+
 The imputation workflow first parses and sorts timestamps within each subject.
 Each subject is regularized to an equal \code{interval_minutes} grid. If a reading
 is missing because the timestamp is absent from the input data, a new row is
@@ -157,10 +173,10 @@ deterministic interval grid is controlled by this package; \code{CGManalyzer}'s
 equal-interval helper is called internally for workflow consistency.
 
 Internally, the function creates time features, lag features, and rolling-mean
-features to support imputation. MICE first completes the target and feature
+features to support imputation. The chosen backend first completes the numeric
 matrix. The selected final method then fills the missing glucose positions in
 \code{imputed_glucose_value}: either by segmentwise ARIMA or by a supervised model
-trained on observed glucose values and the MICE-completed feature matrix.
+trained on observed glucose values and the completed feature matrix.
 These engineered columns are used only during model fitting and are removed
 from the returned data frame.
 
